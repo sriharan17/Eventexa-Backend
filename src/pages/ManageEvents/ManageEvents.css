@@ -1,0 +1,437 @@
+/* =========================================================
+   MANAGE EVENTS PAGE
+========================================================= */
+
+.manage-events-page {
+  min-height: 100vh;
+  background: #0f172a;
+  color: white;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.manage-events-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.manage-events-header h1 {
+  color: white;
+  font-size: 36px;
+  margin: 0 0 8px;
+}
+
+.manage-events-header p {
+  color: #94a3b8;
+  margin: 0;
+}
+
+
+/* =========================================================
+   ADD EVENT BUTTON
+========================================================= */
+
+.add-event-btn {
+  border: none;
+  padding: 12px 22px;
+  border-radius: 10px;
+
+  background: linear-gradient(
+    135deg,
+    #7c3aed,
+    #ec4899
+  );
+
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+
+  transition: 0.3s ease;
+}
+
+.add-event-btn:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 10px 25px rgba(124, 58, 237, 0.3);
+}
+
+
+/* =========================================================
+   EVENTS GRID
+========================================================= */
+
+.events-grid {
+  display: grid !important;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 25px;
+
+  width: 100%;
+}
+
+
+/* =========================================================
+   EVENT CARD
+========================================================= */
+
+.event-card {
+  /* Important fix */
+  display: block !important;
+
+  width: 100%;
+  min-width: 0;
+
+  box-sizing: border-box;
+
+  background: #161f33;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  border-radius: 18px;
+
+  padding: 25px;
+
+  transition: 0.3s ease;
+
+  overflow: hidden;
+}
+
+.event-card:hover {
+  transform: translateY(-5px);
+
+  border-color: #7c3aed;
+
+  box-shadow:
+    0 15px 35px rgba(124, 58, 237, 0.18);
+}
+
+
+/* =========================================================
+   CATEGORY
+========================================================= */
+
+.event-category {
+  display: inline-block;
+
+  background: rgba(124, 58, 237, 0.15);
+
+  color: #c084fc;
+
+  padding: 6px 12px;
+
+  border-radius: 20px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  margin-bottom: 15px;
+}
+
+
+/* =========================================================
+   EVENT TITLE
+========================================================= */
+
+.event-card h2 {
+  display: block;
+
+  width: 100%;
+
+  color: white;
+
+  font-size: 24px;
+  line-height: 1.3;
+
+  margin: 0 0 12px;
+
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+
+/* =========================================================
+   DESCRIPTION
+========================================================= */
+
+.event-description {
+  display: block;
+
+  width: 100%;
+
+  color: #b7bfd4;
+
+  font-size: 14px;
+
+  line-height: 1.6;
+
+  margin: 0 0 22px;
+
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+
+/* =========================================================
+   EVENT DETAILS
+========================================================= */
+
+.event-details {
+  display: flex;
+
+  flex-direction: column;
+
+  width: 100%;
+
+  gap: 12px;
+
+  margin-bottom: 20px;
+}
+
+.event-details div {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 10px;
+
+  width: 100%;
+
+  color: #cbd5e1;
+
+  font-size: 14px;
+
+  line-height: 1.5;
+}
+
+.event-details span {
+  flex: 1;
+
+  min-width: 0;
+
+  word-break: normal;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   MAX PARTICIPANTS
+========================================================= */
+
+.participants {
+  display: block;
+
+  color: #94a3b8;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+
+  margin: 0 0 18px;
+}
+
+
+/* =========================================================
+   REGISTRATION LINK
+========================================================= */
+
+.registration-link {
+  display: inline-block;
+
+  color: #a855f7;
+
+  text-decoration: none;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  line-height: 1.5;
+
+  margin-bottom: 20px;
+
+  overflow-wrap: anywhere;
+}
+
+.registration-link:hover {
+  color: #c084fc;
+}
+
+
+/* =========================================================
+   EVENT ACTIONS
+========================================================= */
+
+.event-actions {
+  display: block;
+
+  width: 100%;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+
+  padding-top: 18px;
+}
+
+
+/* =========================================================
+   DELETE BUTTON
+========================================================= */
+
+.delete-event-btn {
+  width: 100%;
+
+  padding: 11px 15px;
+
+  border-radius: 9px;
+
+  background: transparent;
+
+  border: 1px solid #ef4444;
+
+  color: #f87171;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.3s ease;
+}
+
+.delete-event-btn:hover {
+  background: #ef4444;
+
+  color: white;
+}
+
+
+/* =========================================================
+   NO EVENTS
+========================================================= */
+
+.no-events {
+  text-align: center;
+
+  background: #161f33;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  border-radius: 18px;
+
+  padding: 70px 20px;
+
+  max-width: 700px;
+
+  margin: 0 auto;
+}
+
+.no-events-icon {
+  font-size: 50px;
+
+  margin-bottom: 20px;
+}
+
+.no-events h2 {
+  color: white;
+
+  margin-bottom: 10px;
+}
+
+.no-events p {
+  color: #94a3b8;
+
+  margin-bottom: 25px;
+}
+
+
+/* =========================================================
+   BACK TO DASHBOARD
+========================================================= */
+
+.back-dashboard-btn {
+  display: block;
+
+  margin: 35px auto 0;
+
+  background: transparent;
+
+  border: none;
+
+  color: #94a3b8;
+
+  cursor: pointer;
+
+  font-size: 14px;
+}
+
+.back-dashboard-btn:hover {
+  color: #c084fc;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 992px) {
+
+  .events-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 768px) {
+
+  .manage-events-header {
+    flex-direction: column;
+
+    align-items: stretch;
+
+    text-align: center;
+  }
+
+  .add-event-btn {
+    width: 100%;
+  }
+
+  .events-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 576px) {
+
+  .manage-events-header h1 {
+    font-size: 28px;
+  }
+
+  .event-card {
+    padding: 20px;
+  }
+
+  .event-card h2 {
+    font-size: 21px;
+  }
+
+}
