@@ -10,7 +10,9 @@ const transporter = nodemailer.createTransport({
 
 async function sendMail(message) {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    throw new Error("Email notifications are not configured");
+    const error = new Error("Email notifications are not configured");
+    error.code = "EMAIL_NOT_CONFIGURED";
+    throw error;
   }
 
   return transporter.sendMail({
@@ -20,6 +22,16 @@ async function sendMail(message) {
     },
     ...message,
   });
+}
+
+async function verifyEmailTransport() {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    const error = new Error("Set EMAIL_USER and EMAIL_PASS in the backend environment.");
+    error.code = "EMAIL_NOT_CONFIGURED";
+    throw error;
+  }
+
+  return transporter.verify();
 }
 
 function sendStudentWelcomeEmail(student) {
@@ -67,6 +79,7 @@ function sendEventFeedbackEmail(student, event, googleFormUrl) {
 
 module.exports = {
   sendMail,
+  verifyEmailTransport,
   sendStudentWelcomeEmail,
   sendEventRegistrationEmail,
   sendCertificateEmail,

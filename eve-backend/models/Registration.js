@@ -49,6 +49,12 @@ const registrationSchema = new mongoose.Schema(
       sparse: true,
     },
     certificateIssuedAt: Date,
+    certificateEmailSent: {
+      type: Boolean,
+    },
+    registrationEmailSent: {
+      type: Boolean,
+    },
     feedbackSent: {
       type: Boolean,
       default: false,

@@ -1,8 +1,14 @@
 const express = require("express");
 const Registration = require("../models/Registration");
+const User = require("../models/User");
 const crypto = require("crypto");
 const { authenticate, adminOnly, studentOnly } = require("../middleware/authMiddleware");
-const { sendCertificateEmail, sendEventFeedbackEmail } = require("../utils/mailer");
+const {
+  sendCertificateEmail,
+  sendEventRegistrationEmail,
+  sendEventFeedbackEmail,
+  verifyEmailTransport,
+} = require("../utils/mailer");
 
 const router = express.Router();
 
@@ -25,6 +31,68 @@ router.get("/my", authenticate, studentOnly, async (req, res) => {
   }
 });
 
+router.get("/email/status", authenticate, adminOnly, async (req, res) => {
+  try {
+    await verifyEmailTransport();
+    return res.status(200).json({ message: "Email service is configured and ready." });
+  } catch (error) {
+    console.error("Email service verification failed:", error);
+    return res.status(503).json({
+      message: error.code === "EMAIL_NOT_CONFIGURED"
+        ? "Render is missing EMAIL_USER or EMAIL_PASS."
+        : "Email service verification failed. Check the backend email credentials and provider logs.",
+      code: error.code || "EMAIL_SERVICE_UNAVAILABLE",
+    });
+  }
+});
+
+router.post("/emails/registrations/retry", authenticate, adminOnly, async (req, res) => {
+  try {
+    const Event = require("../models/Event");
+    const registrations = await Registration.find({
+      $or: [
+        { registrationEmailSent: false },
+        { registrationEmailSent: { $exists: false } },
+      ],
+    }).sort({ registeredAt: -1 });
+
+    let sentCount = 0;
+    let failedCount = 0;
+
+    for (const registration of registrations) {
+      const [event, student] = await Promise.all([
+        Event.findById(registration.eventId),
+        User.findById(registration.studentId),
+      ]);
+      if (!event || !student) {
+        failedCount += 1;
+        console.error(`Registration email retry skipped for ${registration._id}: event or student not found.`);
+        continue;
+      }
+
+      try {
+        await sendEventRegistrationEmail(student, event);
+        registration.registrationEmailSent = true;
+        await registration.save();
+        sentCount += 1;
+      } catch (emailError) {
+        console.error(`Registration email retry failed for ${registration._id}:`, emailError);
+        failedCount += 1;
+      }
+    }
+
+    return res.status(200).json({
+      message: `Registration confirmation emails sent: ${sentCount}. Failed: ${failedCount}.`,
+      sentCount,
+      failedCount,
+      totalCandidates: registrations.length,
+    });
+  } catch (error) {
+    console.error("Registration email retry error:", error);
+    return res.status(500).json({ message: "Failed to retry registration emails" });
+  }
+});
+
 router.post("/certificates/generate-all", authenticate, adminOnly, async (req, res) => {
   try {
     const registrations = await Registration.find({
@@ -33,24 +101,46 @@ router.post("/certificates/generate-all", authenticate, adminOnly, async (req, r
         { certificateId: { $exists: false } },
         { certificateId: null },
         { certificateId: "" },
+        { certificateEmailSent: false },
+        {
+          $and: [
+            { certificateId: { $exists: true, $nin: [null, ""] } },
+            { certificateEmailSent: { $exists: false } },
+          ],
+        },
       ],
     });
 
+    let issuedCount = 0;
+    let emailedCount = 0;
+    let emailFailedCount = 0;
     for (const registration of registrations) {
-      registration.certificateId = `EVX-${crypto.randomBytes(6).toString("hex").toUpperCase()}`;
-      registration.certificateIssuedAt = new Date();
-      await registration.save();
+      if (!registration.certificateId) {
+        registration.certificateId = `EVX-${crypto.randomBytes(6).toString("hex").toUpperCase()}`;
+        registration.certificateIssuedAt = new Date();
+        registration.certificateEmailSent = false;
+        issuedCount += 1;
+        await registration.save();
+      }
 
       try {
         await sendCertificateEmail(registration);
+        registration.certificateEmailSent = true;
+        await registration.save();
+        emailedCount += 1;
       } catch (emailError) {
-        console.error("Certificate email failed:", emailError.message);
+        console.error(`Certificate email failed for registration ${registration._id}:`, emailError);
+        registration.certificateEmailSent = false;
+        await registration.save();
+        emailFailedCount += 1;
       }
     }
 
     return res.status(200).json({
-      message: "Certificates generated for present attendees",
-      issuedCount: registrations.length,
+      message: `Generated ${issuedCount} certificate${issuedCount === 1 ? "" : "s"}; emailed ${emailedCount}; email failed for ${emailFailedCount}.`,
+      issuedCount,
+      emailedCount,
+      emailFailedCount,
     });
   } catch (error) {
     console.error("Bulk certificate issuance error:", error);
@@ -95,16 +185,32 @@ router.post("/:registrationId/certificate", authenticate, adminOnly, async (req,
     if (!registration.certificateId) {
       registration.certificateId = `EVX-${crypto.randomBytes(6).toString("hex").toUpperCase()}`;
       registration.certificateIssuedAt = new Date();
+      registration.certificateEmailSent = false;
       await registration.save();
+    }
 
+    if (!registration.certificateEmailSent) {
       try {
         await sendCertificateEmail(registration);
+        registration.certificateEmailSent = true;
+        await registration.save();
       } catch (emailError) {
-        console.error("Certificate email failed:", emailError.message);
+        console.error(`Certificate email failed for registration ${registration._id}:`, emailError);
+        registration.certificateEmailSent = false;
+        await registration.save();
+        return res.status(503).json({
+          message: "Certificate is saved, but its email could not be sent. Check the email service and retry.",
+          emailSent: false,
+          registration,
+        });
       }
     }
 
-    return res.status(200).json({ message: "Certificate issued", registration });
+    return res.status(200).json({
+      message: "Certificate is issued and its email was sent.",
+      emailSent: true,
+      registration,
+    });
   } catch (error) {
     console.error("Certificate issuance error:", error);
     return res.status(500).json({ message: "Failed to issue certificate" });

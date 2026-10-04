@@ -57,9 +57,25 @@ router.post("/google-form-submit", async (req, res) => {
     });
 
     if (existingRegistration) {
+      if (existingRegistration.registrationEmailSent !== true) {
+        try {
+          await sendEventRegistrationEmail(student, event);
+          existingRegistration.registrationEmailSent = true;
+          await existingRegistration.save();
+        } catch (emailError) {
+          console.error(`Registration email failed for ${existingRegistration._id}:`, emailError);
+          return res.status(503).json({
+            message: "Registration exists, but its confirmation email could not be sent. It can be retried by an admin.",
+            registration: existingRegistration,
+            emailSent: false,
+          });
+        }
+      }
+
       return res.status(200).json({
         message: "Registration already recorded",
-        registration: existingRegistration
+        registration: existingRegistration,
+        emailSent: true,
       });
     }
 
@@ -70,6 +86,7 @@ router.post("/google-form-submit", async (req, res) => {
       eventId: event._id,
       eventName: event.title || event.name,
       regNo: student.regNo,
+      registrationEmailSent: false,
       source: "google-form"
     });
 
@@ -77,11 +94,23 @@ router.post("/google-form-submit", async (req, res) => {
 
     try {
       await sendEventRegistrationEmail(student, event);
+      registration.registrationEmailSent = true;
     } catch (emailError) {
-      console.error("Event registration email failed:", emailError.message);
+      console.error(`Event registration email failed for ${registration._id}:`, emailError);
+      await registration.save();
+      return res.status(503).json({
+        message: "Registration was recorded, but its confirmation email could not be sent. It can be retried by an admin.",
+        registration,
+        emailSent: false,
+      });
     }
 
-    res.status(201).json({ message: "Google Form registration recorded", registration });
+    await registration.save();
+    res.status(201).json({
+      message: "Google Form registration recorded and confirmation email sent",
+      registration,
+      emailSent: true,
+    });
   } catch (error) {
     console.error("Google Form registration callback error:", error);
     res.status(500).json({ message: "Failed to record form registration" });
