@@ -353,7 +353,7 @@ function AddEvent() {
 
                 <div className="col-12">
                   <label>
-                    Feedback Google Form Link (Optional)
+                    Google Feedback Form Link (used by Send feedback form)
                   </label>
 
                   <input
@@ -366,7 +366,7 @@ function AddEvent() {
                   />
 
                   <small>
-                    This can be sent to present participants after the event ends.
+                    Present students receive this Google Form by email when you select Send feedback form.
                   </small>
                 </div>
 

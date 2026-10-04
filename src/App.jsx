@@ -87,7 +87,6 @@ function App() {
           path="/event-e-certificates/:registrationId"
           element={<EventCertificates />}
         />
-
         <Route
           path="/admin-dashboard"
           element={<AdminDashboard />}

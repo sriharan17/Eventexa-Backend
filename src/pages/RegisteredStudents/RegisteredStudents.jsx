@@ -17,7 +17,7 @@ function RegisteredStudents() {
     setError("");
     setNotice("");
     try {
-      const response = await api.post(`/events/${registrationId}/attendance`, { status });
+      const response = await api.post(`/registrations/${registrationId}/attendance`, { status });
       setRegistrations((current) => current.map((item) =>
         item._id === registrationId ? { ...item, ...response.data.registration } : item
       ));
@@ -155,7 +155,7 @@ function RegisteredStudents() {
         <header className="registered-header">
           <div>
             <h1>Registered Students</h1>
-            <p>View student registrations for your campus events.</p>
+            <p>View registrations. Add a Google feedback form link to each event before sending feedback.</p>
           </div>
           <div className="registered-header-actions">
             <button

@@ -51,25 +51,17 @@ function sendCertificateEmail(registration) {
   });
 }
 
-function sendEventFeedbackEmail(student, event, feedbackUrl) {
+function sendEventFeedbackEmail(student, event, googleFormUrl) {
   const eventName = event.title || event.name;
 
-  if (!feedbackUrl) {
-    throw new Error("Student feedback page URL is not configured");
+  if (!googleFormUrl) {
+    throw new Error("Google feedback form URL is not configured");
   }
 
   return sendMail({
     to: student.email,
     subject: `Feedback for ${eventName}`,
-    text: `Hi ${student.name},\n\nThank you for attending ${eventName}. We would appreciate your feedback.\n\nPlease share your feedback here:\n${feedbackUrl}\n\nSign in to your Eventexa student account to submit your response.\n\nEventexa`,
-  });
-}
-
-function sendFeedbackSubmissionEmail(admin, registration) {
-  return sendMail({
-    to: admin.email,
-    subject: `Student feedback received: ${registration.eventName}`,
-    text: `Hello ${admin.name || "Admin"},\n\n${registration.studentName} (${registration.studentEmail}) submitted feedback for ${registration.eventName}.\n\nRating: ${registration.feedbackRating}/5\n\nFeedback:\n${registration.feedbackText}\n\nEventexa`,
+    text: `Hi ${student.name},\n\nThank you for attending ${eventName}. We would appreciate your feedback.\n\nPlease complete this Google Form:\n${googleFormUrl}\n\nEventexa`,
   });
 }
 
@@ -79,5 +71,4 @@ module.exports = {
   sendEventRegistrationEmail,
   sendCertificateEmail,
   sendEventFeedbackEmail,
-  sendFeedbackSubmissionEmail,
 };

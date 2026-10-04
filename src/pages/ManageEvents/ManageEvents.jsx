@@ -8,6 +8,8 @@ function ManageEvents() {
 
   const [events, setEvents] = useState([]);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [savingFeedbackId, setSavingFeedbackId] = useState("");
 
   useEffect(() => {
     api.get("/events")
@@ -16,6 +18,34 @@ function ManageEvents() {
         setError(requestError.response?.data?.message || "Failed to load events");
       });
   }, []);
+
+  const handleFeedbackLinkChange = (id, feedbackFormLink) => {
+    setEvents((currentEvents) => currentEvents.map((event) => (
+      event._id === id ? { ...event, feedbackFormLink } : event
+    )));
+  };
+
+  const handleSaveFeedbackLink = async (event) => {
+    setSavingFeedbackId(event._id);
+    setError("");
+    setNotice("");
+
+    try {
+      const response = await api.put(`/events/${event._id}`, {
+        feedbackFormLink: event.feedbackFormLink.trim(),
+      });
+      setEvents((currentEvents) => currentEvents.map((currentEvent) => (
+        currentEvent._id === event._id
+          ? { ...currentEvent, ...response.data.event }
+          : currentEvent
+      )));
+      setNotice(`Google feedback form saved for ${event.title || event.name}.`);
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Failed to save the Google feedback form link.");
+    } finally {
+      setSavingFeedbackId("");
+    }
+  };
 
   // Delete event
   const handleDelete = async (id) => {
@@ -65,6 +95,7 @@ function ManageEvents() {
         {/* ================= EVENTS ================= */}
 
         {error && <p className="error-message">{error}</p>}
+        {notice && <p className="feedback-link-notice" role="status">{notice}</p>}
 
         {events.length === 0 ? (
 
@@ -175,6 +206,31 @@ function ManageEvents() {
                     View Registration Form
                   </a>
                 )}
+
+                <form
+                  className="feedback-link-editor"
+                  onSubmit={(submitEvent) => {
+                    submitEvent.preventDefault();
+                    handleSaveFeedbackLink(event);
+                  }}
+                >
+                  <label htmlFor={`feedback-form-${event._id}`}>Google feedback form</label>
+                  <input
+                    id={`feedback-form-${event._id}`}
+                    type="url"
+                    value={event.feedbackFormLink || ""}
+                    onChange={(changeEvent) => handleFeedbackLinkChange(event._id, changeEvent.target.value)}
+                    placeholder="https://forms.google.com/..."
+                    required
+                  />
+                  <button
+                    type="submit"
+                    className="save-feedback-link-btn"
+                    disabled={savingFeedbackId === event._id || !event.feedbackFormLink?.trim()}
+                  >
+                    {savingFeedbackId === event._id ? "Saving..." : "Save Google Form"}
+                  </button>
+                </form>
 
                 {event.feedbackFormLink && (
                   <a

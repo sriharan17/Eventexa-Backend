@@ -1,8 +1,8 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 const API = axios.create({
     baseURL: 'https://eventexa-backend.onrender.com/api',
-    headers:{
+    headers: {
         'Content-Type': 'application/json',
     },
 });
@@ -18,27 +18,11 @@ API.interceptors.request.use((config) => {
 });
 
 export const getAllRegistrations = async () => {
-    try {
-        return await API.get("/registerations/all");
-    } catch (error) {
-        if (error.response?.status !== 404) {
-            throw error;
-        }
-
-        return API.get("/registrations/all");
-    }
+    return API.get('/registerations/all');
 };
 
 export const deleteAllRegistrations = async () => {
-    try {
-        return await API.delete("/registerations/all");
-    } catch (error) {
-        if (error.response?.status !== 404) {
-            throw error;
-        }
-
-        return API.delete("/registrations/all");
-    }
+    return API.delete('/registerations/all');
 };
 
 export default API;

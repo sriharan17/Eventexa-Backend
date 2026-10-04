@@ -266,6 +266,49 @@
   color: #c084fc;
 }
 
+.feedback-link-editor {
+  display: grid;
+  gap: 9px;
+  margin: 0 0 16px;
+}
+
+.feedback-link-editor label {
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.feedback-link-editor input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+.save-feedback-link-btn {
+  justify-self: start;
+  padding: 9px 12px;
+  border: 1px solid #76c6a4;
+  border-radius: 7px;
+  background: #246d5a;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.save-feedback-link-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.feedback-link-notice {
+  margin: 0 0 18px;
+  color: #86efac;
+}
+
 
 /* =========================================================
    EVENT ACTIONS
