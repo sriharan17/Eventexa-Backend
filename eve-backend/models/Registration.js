@@ -54,6 +54,24 @@ const registrationSchema = new mongoose.Schema(
       default: false,
     },
     feedbackSentAt: Date,
+    feedbackRequestedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
+    },
+    feedbackRating: {
+      type: Number,
+      min: 1,
+      max: 5,
+    },
+    feedbackText: {
+      type: String,
+      maxlength: 2000,
+    },
+    feedbackSubmittedAt: Date,
+    feedbackNotificationSent: {
+      type: Boolean,
+      default: false,
+    },
     regNo: String,
   },
   { timestamps: true }

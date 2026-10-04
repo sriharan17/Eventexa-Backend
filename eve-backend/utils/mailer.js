@@ -51,18 +51,25 @@ function sendCertificateEmail(registration) {
   });
 }
 
-function sendEventFeedbackEmail(student, event, registration) {
+function sendEventFeedbackEmail(student, event, feedbackUrl) {
   const eventName = event.title || event.name;
-  const formLink = event.feedbackFormLink || registration.feedbackFormLink;
 
-  if (!formLink) {
-    return Promise.resolve(false);
+  if (!feedbackUrl) {
+    throw new Error("Student feedback page URL is not configured");
   }
 
   return sendMail({
     to: student.email,
     subject: `Feedback for ${eventName}`,
-    text: `Hi ${student.name},\n\nThank you for attending ${eventName}. We would appreciate your feedback.\n\nPlease share your feedback here:\n${formLink}\n\nEventexa`,
+    text: `Hi ${student.name},\n\nThank you for attending ${eventName}. We would appreciate your feedback.\n\nPlease share your feedback here:\n${feedbackUrl}\n\nSign in to your Eventexa student account to submit your response.\n\nEventexa`,
+  });
+}
+
+function sendFeedbackSubmissionEmail(admin, registration) {
+  return sendMail({
+    to: admin.email,
+    subject: `Student feedback received: ${registration.eventName}`,
+    text: `Hello ${admin.name || "Admin"},\n\n${registration.studentName} (${registration.studentEmail}) submitted feedback for ${registration.eventName}.\n\nRating: ${registration.feedbackRating}/5\n\nFeedback:\n${registration.feedbackText}\n\nEventexa`,
   });
 }
 
@@ -72,4 +79,5 @@ module.exports = {
   sendEventRegistrationEmail,
   sendCertificateEmail,
   sendEventFeedbackEmail,
+  sendFeedbackSubmissionEmail,
 };
