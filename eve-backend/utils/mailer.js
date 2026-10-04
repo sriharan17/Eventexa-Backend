@@ -56,24 +56,36 @@ function sendEventRegistrationEmail(student, event) {
 }
 
 function sendCertificateEmail(registration) {
+  const certificateUrl = process.env.FRONTEND_URL && registration._id
+    ? `${process.env.FRONTEND_URL.replace(/\/+$/, "")}/event-e-certificates/${registration._id}`
+    : null;
+
   return sendMail({
     to: registration.studentEmail,
     subject: `Your Eventexa certificate for ${registration.eventName}`,
-    text: `Hi ${registration.studentName},\n\nYour certificate for ${registration.eventName} has been generated.\n\nCertificate ID: ${registration.certificateId}\n\nEventexa\nYou can download your certificate from your Eventexa account.\n\nEventexa`,
+    text: `Hi ${registration.studentName},\n\nYour certificate for ${registration.eventName} has been generated.\n\nCertificate ID: ${registration.certificateId}${certificateUrl ? `\n\nView your certificate:\n${certificateUrl}` : "\n\nSign in to Eventexa to view your certificate."}\n\nEventexa`,
   });
 }
 
-function sendEventFeedbackEmail(student, event, googleFormUrl) {
+function sendEventFeedbackEmail(student, event, googleFormUrl, appFeedbackUrl) {
   const eventName = event.title || event.name;
 
-  if (!googleFormUrl) {
-    throw new Error("Google feedback form URL is not configured");
+  if (!googleFormUrl && !appFeedbackUrl) {
+    throw new Error("Neither a Google Form URL nor an Eventexa feedback page is configured");
   }
 
   return sendMail({
     to: student.email,
     subject: `Feedback for ${eventName}`,
-    text: `Hi ${student.name},\n\nThank you for attending ${eventName}. We would appreciate your feedback.\n\nPlease complete this Google Form:\n${googleFormUrl}\n\nEventexa`,
+    text: `Hi ${student.name},\n\nThank you for attending ${eventName}. We would appreciate your feedback.${googleFormUrl ? `\n\nComplete the Google Form:\n${googleFormUrl}` : ""}${appFeedbackUrl ? `\n\nYou can also submit feedback in your Eventexa account:\n${appFeedbackUrl}` : ""}\n\nEventexa`,
+  });
+}
+
+function sendFeedbackSubmissionEmail(admin, registration) {
+  return sendMail({
+    to: admin.email,
+    subject: `Student feedback received: ${registration.eventName}`,
+    text: `Hello ${admin.name || "Admin"},\n\n${registration.studentName} (${registration.studentEmail}) submitted feedback for ${registration.eventName}.\n\nRating: ${registration.feedbackRating}/5\n\nFeedback:\n${registration.feedbackText}\n\nEventexa`,
   });
 }
 
@@ -84,4 +96,5 @@ module.exports = {
   sendEventRegistrationEmail,
   sendCertificateEmail,
   sendEventFeedbackEmail,
+  sendFeedbackSubmissionEmail,
 };

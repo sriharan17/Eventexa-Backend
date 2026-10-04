@@ -1,10 +1,12 @@
 const express = require("express");
 const Registration = require("../models/Registration");
 const User = require("../models/User");
+const Admin = require("../models/Admin");
 const crypto = require("crypto");
 const { authenticate, adminOnly, studentOnly } = require("../middleware/authMiddleware");
 const {
   sendCertificateEmail,
+  sendFeedbackSubmissionEmail,
   sendEventRegistrationEmail,
   sendEventFeedbackEmail,
   verifyEmailTransport,
@@ -97,18 +99,7 @@ router.post("/certificates/generate-all", authenticate, adminOnly, async (req, r
   try {
     const registrations = await Registration.find({
       attendanceStatus: "present",
-      $or: [
-        { certificateId: { $exists: false } },
-        { certificateId: null },
-        { certificateId: "" },
-        { certificateEmailSent: false },
-        {
-          $and: [
-            { certificateId: { $exists: true, $nin: [null, ""] } },
-            { certificateEmailSent: { $exists: false } },
-          ],
-        },
-      ],
+      certificateEmailSent: { $ne: true },
     });
 
     let issuedCount = 0;
@@ -118,9 +109,7 @@ router.post("/certificates/generate-all", authenticate, adminOnly, async (req, r
       if (!registration.certificateId) {
         registration.certificateId = `EVX-${crypto.randomBytes(6).toString("hex").toUpperCase()}`;
         registration.certificateIssuedAt = new Date();
-        registration.certificateEmailSent = false;
         issuedCount += 1;
-        await registration.save();
       }
 
       try {
@@ -189,7 +178,7 @@ router.post("/:registrationId/certificate", authenticate, adminOnly, async (req,
       await registration.save();
     }
 
-    if (!registration.certificateEmailSent) {
+    if (registration.certificateEmailSent !== true) {
       try {
         await sendCertificateEmail(registration);
         registration.certificateEmailSent = true;
@@ -261,6 +250,7 @@ router.post("/:registrationId/attendance", authenticate, adminOnly, async (req, 
 router.post("/feedback/send-all", authenticate, adminOnly, async (req, res) => {
   try {
     const Event = require("../models/Event");
+    const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, "");
     const registrations = await Registration.find({
       attendanceStatus: "present",
       feedbackSent: { $ne: true },
@@ -289,15 +279,19 @@ router.post("/feedback/send-all", authenticate, adminOnly, async (req, res) => {
 
       const student = { name: registration.studentName, email: registration.studentEmail };
       const googleFormUrl = event.feedbackFormLink;
-      if (!googleFormUrl) {
+      const appFeedbackUrl = frontendUrl
+        ? `${frontendUrl}/student-feedback/${registration._id}`
+        : null;
+      if (!googleFormUrl && !appFeedbackUrl) {
         missingFormCount += 1;
         continue;
       }
 
       try {
-        await sendEventFeedbackEmail(student, event, googleFormUrl);
+        await sendEventFeedbackEmail(student, event, googleFormUrl, appFeedbackUrl);
         registration.feedbackSent = true;
         registration.feedbackSentAt = new Date();
+        registration.feedbackRequestedBy = req.user.id;
         await registration.save();
         sentCount += 1;
       } catch (mailError) {
@@ -330,6 +324,107 @@ router.post("/feedback/send-all", authenticate, adminOnly, async (req, res) => {
   } catch (error) {
     console.error("Feedback dispatch error:", error);
     return res.status(500).json({ message: "Failed to send feedback forms" });
+  }
+});
+
+router.get("/feedback/my", authenticate, studentOnly, async (req, res) => {
+  try {
+    const registrations = await Registration.find({
+      studentId: req.user.id,
+      attendanceStatus: "present",
+      feedbackSent: true,
+    }).sort({ feedbackSentAt: -1 })
+      .populate("eventId", "title name date venue location");
+    return res.status(200).json(registrations);
+  } catch (error) {
+    console.error("Student feedback lookup error:", error);
+    return res.status(500).json({ message: "Failed to fetch feedback requests" });
+  }
+});
+
+router.get("/feedback/:registrationId", authenticate, studentOnly, async (req, res) => {
+  try {
+    const { registrationId } = req.params;
+    if (!/^[a-f\d]{24}$/i.test(registrationId)) {
+      return res.status(400).json({ message: "Invalid registration ID" });
+    }
+    const registration = await Registration.findOne({
+      _id: registrationId,
+      studentId: req.user.id,
+      attendanceStatus: "present",
+      feedbackSent: true,
+    }).populate("eventId", "title name date venue location");
+    if (!registration) {
+      return res.status(404).json({ message: "Feedback request not found" });
+    }
+    return res.status(200).json(registration);
+  } catch (error) {
+    console.error("Feedback request lookup error:", error);
+    return res.status(500).json({ message: "Failed to fetch feedback request" });
+  }
+});
+
+router.post("/feedback/:registrationId", authenticate, studentOnly, async (req, res) => {
+  try {
+    const { registrationId } = req.params;
+    const rating = Number(req.body.rating);
+    const feedbackText = typeof req.body.feedbackText === "string"
+      ? req.body.feedbackText.trim()
+      : "";
+
+    if (!/^[a-f\d]{24}$/i.test(registrationId)) {
+      return res.status(400).json({ message: "Invalid registration ID" });
+    }
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: "Rating must be a whole number from 1 to 5." });
+    }
+    if (!feedbackText || feedbackText.length > 2000) {
+      return res.status(400).json({ message: "Feedback must be between 1 and 2000 characters." });
+    }
+
+    const registration = await Registration.findOne({
+      _id: registrationId,
+      studentId: req.user.id,
+      attendanceStatus: "present",
+      feedbackSent: true,
+    });
+    if (!registration) {
+      return res.status(404).json({ message: "Feedback request not found" });
+    }
+    if (registration.feedbackSubmittedAt) {
+      return res.status(409).json({ message: "Feedback has already been submitted." });
+    }
+
+    registration.feedbackRating = rating;
+    registration.feedbackText = feedbackText;
+    registration.feedbackSubmittedAt = new Date();
+    await registration.save();
+
+    const admin = registration.feedbackRequestedBy
+      ? await Admin.findById(registration.feedbackRequestedBy)
+      : null;
+    let adminNotified = false;
+    if (admin) {
+      try {
+        await sendFeedbackSubmissionEmail(admin, registration);
+        registration.feedbackAdminNotified = true;
+        await registration.save();
+        adminNotified = true;
+      } catch (emailError) {
+        console.error(`Admin feedback notification failed for registration ${registration._id}:`, emailError);
+      }
+    }
+
+    return res.status(201).json({
+      message: adminNotified
+        ? "Your feedback has been submitted. Thank you!"
+        : "Your feedback was saved, but the admin email notification could not be sent.",
+      adminNotified,
+      registration,
+    });
+  } catch (error) {
+    console.error("Feedback submission error:", error);
+    return res.status(500).json({ message: "Failed to submit feedback" });
   }
 });
 
