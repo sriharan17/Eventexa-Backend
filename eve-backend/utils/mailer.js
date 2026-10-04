@@ -1,37 +1,32 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+function getEmailConfig() {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
 
-async function sendMail(message) {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    const error = new Error("Email notifications are not configured");
+  if (!apiKey || !from) {
+    const error = new Error("Set RESEND_API_KEY and RESEND_FROM_EMAIL in the backend environment.");
     error.code = "EMAIL_NOT_CONFIGURED";
     throw error;
   }
 
-  return transporter.sendMail({
-    from: {
-      name: "Eventexa",
-      address: process.env.EMAIL_USER,
-    },
-    ...message,
-  });
+  return { apiKey, from };
 }
 
-async function verifyEmailTransport() {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    const error = new Error("Set EMAIL_USER and EMAIL_PASS in the backend environment.");
-    error.code = "EMAIL_NOT_CONFIGURED";
-    throw error;
+async function sendMail(message) {
+  const { apiKey, from } = getEmailConfig();
+  const resend = new Resend(apiKey);
+  const { data, error } = await resend.emails.send({ from, ...message });
+
+  if (error) {
+    throw new Error(error.message || "Resend email delivery failed", { cause: error });
   }
 
-  return transporter.verify();
+  return data;
+}
+
+function verifyEmailConfiguration() {
+  getEmailConfig();
 }
 
 function sendStudentWelcomeEmail(student) {
@@ -91,7 +86,7 @@ function sendFeedbackSubmissionEmail(admin, registration) {
 
 module.exports = {
   sendMail,
-  verifyEmailTransport,
+  verifyEmailConfiguration,
   sendStudentWelcomeEmail,
   sendEventRegistrationEmail,
   sendCertificateEmail,

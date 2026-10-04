@@ -9,7 +9,7 @@ const {
   sendFeedbackSubmissionEmail,
   sendEventRegistrationEmail,
   sendEventFeedbackEmail,
-  verifyEmailTransport,
+  verifyEmailConfiguration,
 } = require("../utils/mailer");
 
 const router = express.Router();
@@ -35,14 +35,14 @@ router.get("/my", authenticate, studentOnly, async (req, res) => {
 
 router.get("/email/status", authenticate, adminOnly, async (req, res) => {
   try {
-    await verifyEmailTransport();
-    return res.status(200).json({ message: "Email service is configured and ready." });
+    verifyEmailConfiguration();
+    return res.status(200).json({ message: "Email service configuration is present." });
   } catch (error) {
     console.error("Email service verification failed:", error);
     return res.status(503).json({
       message: error.code === "EMAIL_NOT_CONFIGURED"
-        ? "Render is missing EMAIL_USER or EMAIL_PASS."
-        : "Email service verification failed. Check the backend email credentials and provider logs.",
+        ? "Render is missing RESEND_API_KEY or RESEND_FROM_EMAIL."
+        : "Email service configuration check failed.",
       code: error.code || "EMAIL_SERVICE_UNAVAILABLE",
     });
   }
