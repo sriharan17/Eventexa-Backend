@@ -41,7 +41,7 @@ router.get("/email/status", authenticate, adminOnly, async (req, res) => {
     console.error("Email service verification failed:", error);
     return res.status(503).json({
       message: error.code === "EMAIL_NOT_CONFIGURED"
-        ? "Backend email settings are missing EMAIL_USER or EMAIL_PASS."
+        ? "Backend email settings are missing GOOGLE_APPS_SCRIPT_URL or GOOGLE_APPS_SCRIPT_SECRET."
         : "Email service configuration check failed.",
       code: error.code || "EMAIL_SERVICE_UNAVAILABLE",
     });
@@ -188,7 +188,9 @@ router.post("/:registrationId/certificate", authenticate, adminOnly, async (req,
         registration.certificateEmailSent = false;
         await registration.save();
         return res.status(503).json({
-          message: "Certificate is saved, but its email could not be sent. Check the email service and retry.",
+          message: emailError.name === "TimeoutError"
+            ? "Certificate is saved, but the Google Apps Script request timed out. Check the web app deployment and retry."
+            : `Certificate is saved, but its email could not be sent: ${emailError.message}`,
           emailSent: false,
           registration,
         });

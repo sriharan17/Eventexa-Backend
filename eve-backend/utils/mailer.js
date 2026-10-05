@@ -1,26 +1,51 @@
-const nodemailer = require("nodemailer");
-
 function getEmailConfig() {
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
+  const scriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL;
+  const secret = process.env.GOOGLE_APPS_SCRIPT_SECRET;
 
-  if (!user || !pass) {
-    const error = new Error("Set EMAIL_USER and EMAIL_PASS in the backend environment.");
+  if (!scriptUrl || !secret) {
+    const error = new Error("Set GOOGLE_APPS_SCRIPT_URL and GOOGLE_APPS_SCRIPT_SECRET in the backend environment.");
     error.code = "EMAIL_NOT_CONFIGURED";
     throw error;
   }
 
-  return { user, pass: pass.replace(/\s/g, "") };
+  return { scriptUrl, secret };
 }
 
 async function sendMail(message) {
-  const { user, pass } = getEmailConfig();
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: { user, pass },
+  const { scriptUrl, secret } = getEmailConfig();
+  const response = await fetch(scriptUrl, {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      secret,
+      to: message.to,
+      subject: message.subject,
+      text: message.text,
+    }),
+    signal: AbortSignal.timeout(20000),
   });
 
-  return transporter.sendMail({ from: user, ...message });
+  const responseText = await response.text();
+  let result;
+  try {
+    result = responseText ? JSON.parse(responseText) : null;
+  } catch {
+    const error = new Error("Google Apps Script returned a non-JSON response. Check the deployed web app URL and access settings.");
+    error.code = "EMAIL_INVALID_RESPONSE";
+    throw error;
+  }
+
+  if (!response.ok || result?.success !== true) {
+    const detail = result?.message || response.statusText || "Unknown email delivery error";
+    const error = new Error(`Google Apps Script email delivery failed: ${detail}`);
+    error.code = "EMAIL_DELIVERY_FAILED";
+    throw error;
+  }
+
+  return result;
 }
 
 function verifyEmailConfiguration() {
