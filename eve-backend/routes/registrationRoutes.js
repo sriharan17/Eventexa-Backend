@@ -108,8 +108,10 @@ router.post("/certificates/generate-all", authenticate, adminOnly, async (req, r
     for (const registration of registrations) {
       if (!registration.certificateId) {
         registration.certificateId = `EVX-${crypto.randomBytes(6).toString("hex").toUpperCase()}`;
-        registration.certificateIssuedAt = new Date();
         issuedCount += 1;
+      }
+      if (!registration.certificateIssuedAt) {
+        registration.certificateIssuedAt = new Date();
       }
 
       try {
@@ -172,9 +174,16 @@ router.post("/:registrationId/certificate", authenticate, adminOnly, async (req,
       });
     }
 
+    let certificateChanged = false;
     if (!registration.certificateId) {
       registration.certificateId = `EVX-${crypto.randomBytes(6).toString("hex").toUpperCase()}`;
+      certificateChanged = true;
+    }
+    if (!registration.certificateIssuedAt) {
       registration.certificateIssuedAt = new Date();
+      certificateChanged = true;
+    }
+    if (certificateChanged) {
       registration.certificateEmailSent = false;
       await registration.save();
     }
