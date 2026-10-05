@@ -29,6 +29,10 @@ async function sendMail(message) {
       eventDate: message.eventDate || "",
       eventTime: message.eventTime || "",
       eventVenue: message.eventVenue || "",
+      messageType: message.messageType || "general",
+      certificateId: message.certificateId || "",
+      certificateIssuedDate: message.certificateIssuedDate || "",
+      certificateUrl: message.certificateUrl || "",
     }),
     signal: AbortSignal.timeout(20000),
   });
@@ -118,6 +122,7 @@ function sendEventRegistrationEmail(student, event) {
     eventDate,
     eventTime,
     eventVenue,
+    messageType: "registration",
   });
 }
 
@@ -133,14 +138,16 @@ function sendCertificateEmail(registration) {
   const certificateUrl = process.env.FRONTEND_URL && registration._id
     ? `${process.env.FRONTEND_URL.replace(/\/+$/, "")}/event-e-certificates/${registration._id}`
     : null;
+  const certificateIssuedDate = registration.certificateIssuedAt
+    ? new Date(registration.certificateIssuedAt).toLocaleDateString("en-US", { dateStyle: "long" })
+    : "";
   const certificateDetails = [
     `Event: ${eventDetails.eventName}`,
     eventDetails.eventDate && `Date: ${eventDetails.eventDate}`,
     eventDetails.eventTime && `Time: ${eventDetails.eventTime}`,
     eventDetails.eventVenue && `Venue: ${eventDetails.eventVenue}`,
     registration.certificateId && `Certificate ID: ${registration.certificateId}`,
-    registration.certificateIssuedAt
-      && `Date issued: ${new Date(registration.certificateIssuedAt).toLocaleDateString("en-US", { dateStyle: "long" })}`,
+    certificateIssuedDate && `Date issued: ${certificateIssuedDate}`,
   ].filter(Boolean);
 
   return sendMail({
@@ -152,6 +159,10 @@ function sendCertificateEmail(registration) {
     eventDate: eventDetails.eventDate,
     eventTime: eventDetails.eventTime,
     eventVenue: eventDetails.eventVenue,
+    messageType: "certificate",
+    certificateId: registration.certificateId || "",
+    certificateIssuedDate,
+    certificateUrl: certificateUrl || "",
   });
 }
 

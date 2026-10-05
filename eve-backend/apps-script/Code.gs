@@ -23,11 +23,53 @@ function doPost(event) {
       return jsonResponse({ success: false, message: "The Gmail daily email quota has been reached." });
     }
 
-    MailApp.sendEmail({
+    var email = {
       to: input.to,
       subject: input.subject,
       body: input.text,
-      htmlBody: escapeHtml(input.text).replace(/\n/g, "<br>"),
+    };
+
+    if (input.messageType === "certificate") {
+      if (!input.eventName || !input.certificateId || !input.certificateIssuedDate) {
+        return jsonResponse({
+          success: false,
+          message: "Event name, certificate ID, and issue date are required for certificate emails.",
+        });
+      }
+
+      var studentName = input.name || "there";
+      var certificateLines = [
+        "Event: " + input.eventName,
+        input.eventDate && "Event date: " + input.eventDate,
+        input.eventTime && "Event time: " + input.eventTime,
+        input.eventVenue && "Venue: " + input.eventVenue,
+        "Certificate ID: " + input.certificateId,
+        "Date issued: " + input.certificateIssuedDate,
+      ].filter(Boolean);
+
+      email.subject = "Your certificate for " + input.eventName;
+      email.body = [
+        "Hello " + studentName + ",",
+        "",
+        "Congratulations! You have received a certificate recognizing your participation in " + input.eventName + ".",
+        "",
+        "CERTIFICATE DETAILS",
+        certificateLines.join("\n"),
+        "",
+        input.certificateUrl
+          ? "View and download your certificate:\n" + input.certificateUrl
+          : "Sign in to your Eventexa account to view and download your certificate.",
+        "",
+        "Congratulations again,",
+        "Eventexa",
+      ].join("\n");
+    }
+
+    MailApp.sendEmail({
+      to: email.to,
+      subject: email.subject,
+      body: email.body,
+      htmlBody: escapeHtml(email.body).replace(/\n/g, "<br>"),
       name: "Eventexa",
     });
 
