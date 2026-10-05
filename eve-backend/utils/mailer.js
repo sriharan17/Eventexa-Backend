@@ -1,9 +1,9 @@
 function getEmailConfig() {
-  const scriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL;
-  const secret = process.env.GOOGLE_APPS_SCRIPT_SECRET;
+  const scriptUrl = process.env.EVENTEXA_MAIL_URL;
+  const secret = process.env.EVENTEXA_MAIL_SECRET;
 
   if (!scriptUrl || !secret) {
-    const error = new Error("Set GOOGLE_APPS_SCRIPT_URL and GOOGLE_APPS_SCRIPT_SECRET in the backend environment.");
+    const error = new Error("Set EVENTEXA_MAIL_URL and EVENTEXA_MAIL_SECRET in the backend environment.");
     error.code = "EMAIL_NOT_CONFIGURED";
     throw error;
   }
@@ -60,28 +60,45 @@ function sendStudentWelcomeEmail(student) {
   });
 }
 
+function firstText(...values) {
+  return values.find((value) => typeof value === "string" && value.trim())?.trim() || "";
+}
+
 function sendEventRegistrationEmail(student, event) {
-  const eventName = event.title || event.name;
-  const eventDate = event.date ? `\nDate: ${event.date}` : "";
-  const eventTime = event.startTime || event.time;
-  const eventVenue = event.venue || event.location;
+  const eventName = firstText(event.title, event.name, event.eventName) || "this event";
+  const eventDetails = [
+    firstText(event.date, event.eventDate) && `Date: ${firstText(event.date, event.eventDate)}`,
+    firstText(event.startTime, event.time, event.eventTime)
+      && `Time: ${firstText(event.startTime, event.time, event.eventTime)}${firstText(event.endTime) ? ` - ${firstText(event.endTime)}` : ""}`,
+    firstText(event.venue, event.location, event.eventVenue)
+      && `Venue: ${firstText(event.venue, event.location, event.eventVenue)}`,
+    firstText(event.category) && `Category: ${firstText(event.category)}`,
+    firstText(event.organizer) && `Organizer: ${firstText(event.organizer)}`,
+  ].filter(Boolean);
+  const detailsText = eventDetails.length
+    ? `\n\nEvent details:\n${eventDetails.join("\n")}`
+    : "\n\nEvent details will be shared by the organizer.";
+  const studentName = firstText(student.name, student.fullName) || "there";
 
   return sendMail({
     to: student.email,
     subject: `Registration confirmed: ${eventName}`,
-    text: `Hi ${student.name},\n\nYour registration for ${eventName} is confirmed.${eventDate}${eventTime ? `\nTime: ${eventTime}` : ""}${eventVenue ? `\nVenue: ${eventVenue}` : ""}\n\nWe look forward to seeing you there.\n\nEventexa`,
+    text: `Hi ${studentName},\n\nYour registration for ${eventName} is confirmed.${detailsText}\n\nWe look forward to seeing you there.\n\nEventexa`,
   });
 }
 
 function sendCertificateEmail(registration) {
+  const eventName = firstText(registration.eventName, registration.eventId?.title, registration.eventId?.name)
+    || "this event";
+  const studentName = firstText(registration.studentName) || "there";
   const certificateUrl = process.env.FRONTEND_URL && registration._id
     ? `${process.env.FRONTEND_URL.replace(/\/+$/, "")}/event-e-certificates/${registration._id}`
     : null;
 
   return sendMail({
     to: registration.studentEmail,
-    subject: `Your Eventexa certificate for ${registration.eventName}`,
-    text: `Hi ${registration.studentName},\n\nYour certificate for ${registration.eventName} has been generated.\n\nCertificate ID: ${registration.certificateId}${certificateUrl ? `\n\nView your certificate:\n${certificateUrl}` : "\n\nSign in to Eventexa to view your certificate."}\n\nEventexa`,
+    subject: `Your Eventexa certificate for ${eventName}`,
+    text: `Hi ${studentName},\n\nYou have received a certificate for ${eventName}.\n\nCertificate ID: ${registration.certificateId}${certificateUrl ? `\n\nView your certificate:\n${certificateUrl}` : "\n\nSign in to Eventexa to view your certificate."}\n\nEventexa`,
   });
 }
 

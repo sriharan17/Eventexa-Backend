@@ -41,7 +41,7 @@ router.get("/email/status", authenticate, adminOnly, async (req, res) => {
     console.error("Email service verification failed:", error);
     return res.status(503).json({
       message: error.code === "EMAIL_NOT_CONFIGURED"
-        ? "Backend email settings are missing GOOGLE_APPS_SCRIPT_URL or GOOGLE_APPS_SCRIPT_SECRET."
+        ? "Backend email settings are missing EVENTEXA_MAIL_URL or EVENTEXA_MAIL_SECRET."
         : "Email service configuration check failed.",
       code: error.code || "EMAIL_SERVICE_UNAVAILABLE",
     });
