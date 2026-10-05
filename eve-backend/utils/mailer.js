@@ -24,6 +24,11 @@ async function sendMail(message) {
       to: message.to,
       subject: message.subject,
       text: message.text,
+      name: message.name || "",
+      eventName: message.eventName || "",
+      eventDate: message.eventDate || "",
+      eventTime: message.eventTime || "",
+      eventVenue: message.eventVenue || "",
     }),
     signal: AbortSignal.timeout(20000),
   });
@@ -84,6 +89,14 @@ function sendEventRegistrationEmail(student, event) {
     to: student.email,
     subject: `Registration confirmed: ${eventName}`,
     text: `Hi ${studentName},\n\nYour registration for ${eventName} is confirmed.${detailsText}\n\nWe look forward to seeing you there.\n\nEventexa`,
+    name: studentName,
+    eventName,
+    eventDate: firstText(event.date, event.eventDate),
+    eventTime: [
+      firstText(event.startTime, event.time, event.eventTime),
+      firstText(event.endTime),
+    ].filter(Boolean).join(" - "),
+    eventVenue: firstText(event.venue, event.location, event.eventVenue),
   });
 }
 
@@ -99,6 +112,8 @@ function sendCertificateEmail(registration) {
     to: registration.studentEmail,
     subject: `Your Eventexa certificate for ${eventName}`,
     text: `Hi ${studentName},\n\nYou have received a certificate for ${eventName}.\n\nCertificate ID: ${registration.certificateId}${certificateUrl ? `\n\nView your certificate:\n${certificateUrl}` : "\n\nSign in to Eventexa to view your certificate."}\n\nEventexa`,
+    name: studentName,
+    eventName,
   });
 }
 
