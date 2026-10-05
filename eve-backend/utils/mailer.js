@@ -1,28 +1,26 @@
-const { Resend } = require("resend");
+const nodemailer = require("nodemailer");
 
 function getEmailConfig() {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS;
 
-  if (!apiKey || !from) {
-    const error = new Error("Set RESEND_API_KEY and RESEND_FROM_EMAIL in the backend environment.");
+  if (!user || !pass) {
+    const error = new Error("Set EMAIL_USER and EMAIL_PASS in the backend environment.");
     error.code = "EMAIL_NOT_CONFIGURED";
     throw error;
   }
 
-  return { apiKey, from };
+  return { user, pass: pass.replace(/\s/g, "") };
 }
 
 async function sendMail(message) {
-  const { apiKey, from } = getEmailConfig();
-  const resend = new Resend(apiKey);
-  const { data, error } = await resend.emails.send({ from, ...message });
+  const { user, pass } = getEmailConfig();
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user, pass },
+  });
 
-  if (error) {
-    throw new Error(error.message || "Resend email delivery failed", { cause: error });
-  }
-
-  return data;
+  return transporter.sendMail({ from: user, ...message });
 }
 
 function verifyEmailConfiguration() {
