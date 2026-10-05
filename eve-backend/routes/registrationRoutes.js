@@ -100,7 +100,7 @@ router.post("/certificates/generate-all", authenticate, adminOnly, async (req, r
     const registrations = await Registration.find({
       attendanceStatus: "present",
       certificateEmailSent: { $ne: true },
-    });
+    }).populate("eventId", "title name date startTime endTime time venue location");
 
     let issuedCount = 0;
     let emailedCount = 0;
@@ -160,7 +160,8 @@ router.post("/:registrationId/certificate", authenticate, adminOnly, async (req,
       return res.status(400).json({ message: "Invalid registration ID" });
     }
 
-    const registration = await Registration.findById(registrationId);
+    const registration = await Registration.findById(registrationId)
+      .populate("eventId", "title name date startTime endTime time venue location");
     if (!registration) {
       return res.status(404).json({ message: "Registration not found" });
     }

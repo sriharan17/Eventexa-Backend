@@ -69,14 +69,38 @@ function firstText(...values) {
   return values.find((value) => typeof value === "string" && value.trim())?.trim() || "";
 }
 
+function formatEventDate(value) {
+  const date = firstText(value);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) return date;
+
+  return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])))
+    .toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+}
+
+function getEventDetails(event) {
+  const startTime = firstText(event.startTime, event.time, event.eventTime);
+  const endTime = firstText(event.endTime);
+
+  return {
+    eventName: firstText(event.title, event.name, event.eventName) || "Campus event",
+    eventDate: formatEventDate(event.date || event.eventDate),
+    eventTime: [startTime, endTime].filter(Boolean).join(" - "),
+    eventVenue: firstText(event.venue, event.location, event.eventVenue),
+  };
+}
+
 function sendEventRegistrationEmail(student, event) {
-  const eventName = firstText(event.title, event.name, event.eventName) || "this event";
+  const { eventName, eventDate, eventTime, eventVenue } = getEventDetails(event);
   const eventDetails = [
-    firstText(event.date, event.eventDate) && `Date: ${firstText(event.date, event.eventDate)}`,
-    firstText(event.startTime, event.time, event.eventTime)
-      && `Time: ${firstText(event.startTime, event.time, event.eventTime)}${firstText(event.endTime) ? ` - ${firstText(event.endTime)}` : ""}`,
-    firstText(event.venue, event.location, event.eventVenue)
-      && `Venue: ${firstText(event.venue, event.location, event.eventVenue)}`,
+    eventDate && `Date: ${eventDate}`,
+    eventTime && `Time: ${eventTime}`,
+    eventVenue && `Venue: ${eventVenue}`,
     firstText(event.category) && `Category: ${firstText(event.category)}`,
     firstText(event.organizer) && `Organizer: ${firstText(event.organizer)}`,
   ].filter(Boolean);
@@ -88,32 +112,46 @@ function sendEventRegistrationEmail(student, event) {
   return sendMail({
     to: student.email,
     subject: `Registration confirmed: ${eventName}`,
-    text: `Hi ${studentName},\n\nYour registration for ${eventName} is confirmed.${detailsText}\n\nWe look forward to seeing you there.\n\nEventexa`,
+    text: `Hello ${studentName},\n\nYour registration for ${eventName} is confirmed. We look forward to welcoming you.\n${detailsText}\n\nPlease keep this email for your event details. If you have questions, contact the event organizer.\n\nBest regards,\nEventexa`,
     name: studentName,
     eventName,
-    eventDate: firstText(event.date, event.eventDate),
-    eventTime: [
-      firstText(event.startTime, event.time, event.eventTime),
-      firstText(event.endTime),
-    ].filter(Boolean).join(" - "),
-    eventVenue: firstText(event.venue, event.location, event.eventVenue),
+    eventDate,
+    eventTime,
+    eventVenue,
   });
 }
 
 function sendCertificateEmail(registration) {
-  const eventName = firstText(registration.eventName, registration.eventId?.title, registration.eventId?.name)
-    || "this event";
+  const relatedEvent = registration.eventId?.toObject
+    ? registration.eventId.toObject()
+    : registration.eventId || {};
+  const eventDetails = getEventDetails({
+    ...relatedEvent,
+    eventName: registration.eventName || relatedEvent.title || relatedEvent.name,
+  });
   const studentName = firstText(registration.studentName) || "there";
   const certificateUrl = process.env.FRONTEND_URL && registration._id
     ? `${process.env.FRONTEND_URL.replace(/\/+$/, "")}/event-e-certificates/${registration._id}`
     : null;
+  const certificateDetails = [
+    `Event: ${eventDetails.eventName}`,
+    eventDetails.eventDate && `Date: ${eventDetails.eventDate}`,
+    eventDetails.eventTime && `Time: ${eventDetails.eventTime}`,
+    eventDetails.eventVenue && `Venue: ${eventDetails.eventVenue}`,
+    registration.certificateId && `Certificate ID: ${registration.certificateId}`,
+    registration.certificateIssuedAt
+      && `Date issued: ${new Date(registration.certificateIssuedAt).toLocaleDateString("en-US", { dateStyle: "long" })}`,
+  ].filter(Boolean);
 
   return sendMail({
     to: registration.studentEmail,
-    subject: `Your Eventexa certificate for ${eventName}`,
-    text: `Hi ${studentName},\n\nYou have received a certificate for ${eventName}.\n\nCertificate ID: ${registration.certificateId}${certificateUrl ? `\n\nView your certificate:\n${certificateUrl}` : "\n\nSign in to Eventexa to view your certificate."}\n\nEventexa`,
+    subject: `Your certificate for ${eventDetails.eventName}`,
+    text: `Hello ${studentName},\n\nCongratulations! You have received a certificate recognizing your participation in ${eventDetails.eventName}.\n\nCERTIFICATE DETAILS\n${certificateDetails.join("\n")}${certificateUrl ? `\n\nView and download your certificate:\n${certificateUrl}` : "\n\nSign in to your Eventexa account to view and download your certificate."}\n\nCongratulations again,\nEventexa`,
     name: studentName,
-    eventName,
+    eventName: eventDetails.eventName,
+    eventDate: eventDetails.eventDate,
+    eventTime: eventDetails.eventTime,
+    eventVenue: eventDetails.eventVenue,
   });
 }
 

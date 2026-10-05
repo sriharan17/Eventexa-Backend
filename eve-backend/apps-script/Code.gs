@@ -27,6 +27,7 @@ function doPost(event) {
       to: input.to,
       subject: input.subject,
       body: input.text,
+      htmlBody: escapeHtml(input.text).replace(/\n/g, "<br>"),
       name: "Eventexa",
     });
 
@@ -37,6 +38,15 @@ function doPost(event) {
       message: error && error.message ? error.message : "Email delivery failed.",
     });
   }
+}
+
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function jsonResponse(payload) {
