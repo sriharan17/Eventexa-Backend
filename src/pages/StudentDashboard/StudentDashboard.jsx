@@ -148,9 +148,10 @@ function StudentDashboard() {
           <a href="#" className="active">🏠 Dashboard</a>
           <Link to="/all-events">🎉 All Events</Link>
           <Link to="/my-registrations">📝 My Registrations</Link>
+          <Link to="/student-feedback">💬 Event Feedback</Link>
           <Link to="/event-e-certificates">🏅 Event E-Certificates</Link>
           <a href="#">📢 Announcements</a>
-          <a href="#">👤 Profile</a>
+          <Link to="/student-profile">👤 Profile</Link>
         </nav>
 
         <button className="dashboard-logout" onClick={handleLogout}>
@@ -168,9 +169,13 @@ function StudentDashboard() {
             <p>Discover and participate in exciting campus events.</p>
           </div>
 
-          <div className="student-profile">
+          <Link
+            to="/student-profile"
+            className="student-profile"
+            aria-label="View your student profile"
+          >
             🎓
-          </div>
+          </Link>
         </div>
 
         {/* Statistics */}

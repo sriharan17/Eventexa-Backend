@@ -14,10 +14,12 @@ import AddEvent from "./pages/AddEvent/AddEvent";
 import ManageEvents from "./pages/ManageEvents/ManageEvents";
 
 import StudentDashboard from "./pages/StudentDashboard/StudentDashboard";
+import StudentProfile from "./pages/StudentProfile/StudentProfile";
 import AllEvents from "./pages/AllEvents/AllEvents";
 import MyRegistrations from "./pages/MyRegistrations/MyRegistrations";
 import RegisteredStudents from "./pages/RegisteredStudents/RegisteredStudents";
 import EventCertificates from "./pages/EventCertificates/EventCertificates";
+import StudentFeedback from "./pages/StudentFeedback/StudentFeedback";
 
 function App() {
   return (
@@ -46,6 +48,10 @@ function App() {
         <Route
           path="/student-dashboard"
           element={<StudentDashboard />}
+        />
+        <Route
+          path="/student-profile"
+          element={<StudentProfile />}
         />
 
         {/* Admin */}
@@ -87,6 +93,8 @@ function App() {
           path="/event-e-certificates/:registrationId"
           element={<EventCertificates />}
         />
+        <Route path="/student-feedback" element={<StudentFeedback />} />
+        <Route path="/student-feedback/:registrationId" element={<StudentFeedback />} />
         <Route
           path="/admin-dashboard"
           element={<AdminDashboard />}

@@ -2,7 +2,20 @@
 
 ## Backend email notifications
 
-Set `EMAIL_USER` and `EMAIL_PASS` in `eve-backend/.env` to enable student welcome and event registration emails. For Gmail, use an app password for the sending account. Keep this file private and do not commit it. Email delivery failures are logged by the backend and do not undo a completed registration.
+The backend sends email through Google Apps Script and Gmail over HTTPS, so it does not need outbound SMTP access or a purchased domain. A free Gmail account currently has a daily quota of 100 email recipients through Apps Script; see [Google's quota documentation](https://developers.google.com/apps-script/guides/services/quotas) for current limits.
+
+1. Open [Google Apps Script](https://script.google.com/) while signed in to the Gmail account you want to send from. Create a project and paste in [`Code.gs`](./eve-backend/apps-script/Code.gs).
+2. In **Project Settings > Script Properties**, add `EVENTEXA_MAIL_SECRET` with a long, random secret value. Keep it private.
+3. Click **Deploy > New deployment**, select **Web app**, set **Execute as** to **Me**, and set **Who has access** to **Anyone**. Deploy and copy the web app URL ending in `/exec`.
+4. In the backend environment (for local development, `eve-backend/.env`; for production, the backend service's Render environment), set:
+   - `EVENTEXA_MAIL_URL`: the deployed `/exec` URL.
+   - `EVENTEXA_MAIL_SECRET`: the exact same secret you set in Apps Script.
+   - `FRONTEND_URL`: the deployed Eventexa frontend origin, so certificate emails can link directly to the in-app certificate.
+5. Redeploy the backend after changing its environment variables. When you edit the Apps Script later, create a new deployment version and update the existing web app deployment to that version.
+
+The Apps Script web app must be accessible to anyone because the backend calls it without a Google login; the shared secret protects the mail endpoint. Keep the secret private. Email delivery failures are logged by the backend and do not undo a completed registration.
+
+When an admin generates a certificate, the student must first be marked present. Eventexa emails a certificate notice with a link to the student's in-app certificate and lists the certificate under **Event E-Certificates**. If the email still looks like a registration confirmation, update the Apps Script web app deployment to the latest `Code.gs` version and redeploy the backend; older deployments may not recognize certificate email requests.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

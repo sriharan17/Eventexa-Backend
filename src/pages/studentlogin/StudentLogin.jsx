@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import "./StudentLogin.css";
 import api from "../../services/api";
 
 function StudentLogin() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,7 +23,13 @@ function StudentLogin() {
       localStorage.removeItem("admin");
       localStorage.setItem("student", JSON.stringify(response.data.student));
       localStorage.setItem("studentToken", response.data.token);
-      navigate("/student-dashboard");
+      const redirectPath = searchParams.get("redirect");
+      navigate(
+        redirectPath?.startsWith("/") && !redirectPath.startsWith("//")
+          ? redirectPath
+          : "/student-dashboard",
+        { replace: true }
+      );
     } catch (error) {
       setError(
         error.response?.data?.message ||

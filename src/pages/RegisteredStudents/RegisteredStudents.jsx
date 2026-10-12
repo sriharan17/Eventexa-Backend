@@ -12,6 +12,8 @@ function RegisteredStudents() {
   const [deletingAll, setDeletingAll] = useState(false);
   const [notice, setNotice] = useState("");
   const [sendingFeedback, setSendingFeedback] = useState(false);
+  const [retryingRegistrationEmails, setRetryingRegistrationEmails] = useState(false);
+  const [checkingEmailService, setCheckingEmailService] = useState(false);
 
   const updateAttendance = async (registrationId, status) => {
     setError("");
@@ -58,12 +60,19 @@ function RegisteredStudents() {
   const handleIssueCertificate = async (registration) => {
     setIssuingId(registration._id);
     setError("");
+    setNotice("");
     try {
       const response = await api.post(`/registrations/${registration._id}/certificate`);
       setRegistrations((current) => current.map((item) => (
         item._id === registration._id ? { ...item, ...response.data.registration } : item
       )));
+      setNotice(response.data.message || "Certificate email sent.");
     } catch (requestError) {
+      if (requestError.response?.data?.registration) {
+        setRegistrations((current) => current.map((item) => (
+          item._id === registration._id ? { ...item, ...requestError.response.data.registration } : item
+        )));
+      }
       setError(requestError.response?.data?.message || "Unable to issue certificate.");
     } finally {
       setIssuingId("");
@@ -76,12 +85,13 @@ function RegisteredStudents() {
     setNotice("");
     try {
       const response = await api.post("/registrations/certificates/generate-all");
+      if (response.data.emailFailedCount > 0) {
+        setError(response.data.message);
+      } else {
+        setNotice(response.data.message || "Certificate email processing completed.");
+      }
       const registrationsResponse = await getAllRegistrations();
       setRegistrations(Array.isArray(registrationsResponse.data) ? registrationsResponse.data : []);
-      const issuedCount = response.data.issuedCount || 0;
-      setNotice(issuedCount === 0
-        ? "All registrations already have a certificate."
-        : `Generated ${issuedCount} certificate${issuedCount === 1 ? "" : "s"}.`);
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Unable to generate certificates.");
     } finally {
@@ -115,9 +125,13 @@ function RegisteredStudents() {
     setNotice("");
     try {
       const response = await api.post("/registrations/feedback/send-all");
+      if (response.data.failedCount > 0 || response.data.missingFormCount > 0) {
+        setError(response.data.message || "Some feedback emails could not be sent.");
+      } else {
+        setNotice(response.data.message || "Feedback forms were sent.");
+      }
       const registrationsResponse = await getAllRegistrations();
       setRegistrations(Array.isArray(registrationsResponse.data) ? registrationsResponse.data : []);
-      setNotice(response.data.message || "Feedback forms were sent.");
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Unable to send feedback forms.");
     } finally {
@@ -125,9 +139,45 @@ function RegisteredStudents() {
     }
   };
 
+  const handleRetryRegistrationEmails = async () => {
+    setRetryingRegistrationEmails(true);
+    setError("");
+    setNotice("");
+    try {
+      const response = await api.post("/registrations/emails/registrations/retry");
+      if (response.data.failedCount > 0) {
+        setError(response.data.message);
+      } else {
+        setNotice(response.data.message);
+      }
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Unable to retry registration emails.");
+    } finally {
+      setRetryingRegistrationEmails(false);
+    }
+  };
+
+  const handleCheckEmailService = async () => {
+    setCheckingEmailService(true);
+    setError("");
+    setNotice("");
+    try {
+      const response = await api.get("/registrations/email/status");
+      setNotice(response.data.message);
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Email service check failed.");
+    } finally {
+      setCheckingEmailService(false);
+    }
+  };
+
   const pendingCertificateCount = registrations.filter(
-    (registration) => registration.attendanceStatus === "present" && !registration.certificateId
+    (registration) => registration.attendanceStatus === "present"
+      && (!registration.certificateId || registration.certificateEmailSent !== true)
   ).length;
+  const feedbackRecords = registrations.filter(
+    (registration) => registration.feedbackSubmittedAt && registration.feedbackText
+  );
 
   return (
     <div className="registered-students-page">
@@ -161,10 +211,26 @@ function RegisteredStudents() {
             <button
               type="button"
               className="generate-all-certificates-btn"
+              onClick={handleCheckEmailService}
+              disabled={loading || checkingEmailService}
+            >
+              {checkingEmailService ? "Checking email..." : "Check email service"}
+            </button>
+            <button
+              type="button"
+              className="generate-all-certificates-btn"
+              onClick={handleRetryRegistrationEmails}
+              disabled={loading || retryingRegistrationEmails}
+            >
+              {retryingRegistrationEmails ? "Retrying..." : "Retry registration emails"}
+            </button>
+            <button
+              type="button"
+              className="generate-all-certificates-btn"
               onClick={handleGenerateAll}
               disabled={loading || generatingAll || pendingCertificateCount === 0}
             >
-              {generatingAll ? "Generating..." : `Generate all certificates (${pendingCertificateCount})`}
+              {generatingAll ? "Generating..." : `Generate & email all certificates (${pendingCertificateCount})`}
             </button>
             <button
               type="button"
@@ -264,7 +330,21 @@ function RegisteredStudents() {
                             {registration.attendanceStatus === "absent" ? "Blocked" : "Pending"}
                           </span>
                         ) : registration.certificateId ? (
-                          <span className="certificate-issued">Issued</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                            <span className="certificate-issued">
+                              {registration.certificateEmailSent === true ? "Issued · email sent" : "Issued · email unconfirmed"}
+                            </span>
+                            {registration.certificateEmailSent !== true && (
+                              <button
+                                type="button"
+                                className="issue-certificate-btn"
+                                onClick={() => handleIssueCertificate(registration)}
+                                disabled={issuingId === registration._id}
+                              >
+                                {issuingId === registration._id ? "Sending..." : "Retry email"}
+                              </button>
+                            )}
+                          </div>
                         ) : (
                           <button
                             type="button"
@@ -272,12 +352,69 @@ function RegisteredStudents() {
                             onClick={() => handleIssueCertificate(registration)}
                             disabled={issuingId === registration._id}
                           >
-                            {issuingId === registration._id ? "Issuing..." : "Generate"}
+                            {issuingId === registration._id ? "Issuing..." : "Generate & email"}
                           </button>
                         )}
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="registered-card feedback-records-card" aria-labelledby="feedback-records-title">
+          <div className="feedback-records-heading">
+            <div>
+              <h2 id="feedback-records-title">Student Feedback Records</h2>
+              <p>Feedback submitted by students for attended events.</p>
+            </div>
+            <span className="registered-count">
+              {feedbackRecords.length} {feedbackRecords.length === 1 ? "response" : "responses"}
+            </span>
+          </div>
+
+          {loading ? (
+            <p className="registered-message" role="status">Loading feedback records...</p>
+          ) : feedbackRecords.length === 0 ? (
+            <p className="no-registrations">No student feedback has been submitted yet.</p>
+          ) : (
+            <div className="registered-table-wrap">
+              <table className="registered-table feedback-records-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Student</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Event</th>
+                    <th scope="col">Rating</th>
+                    <th scope="col">Feedback</th>
+                    <th scope="col">Submitted</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {feedbackRecords.map((record) => {
+                    const eventName = record.eventId?.title
+                      || record.eventId?.name
+                      || record.eventName
+                      || "Campus event";
+                    const submittedDate = new Date(record.feedbackSubmittedAt);
+
+                    return (
+                      <tr key={record._id}>
+                        <td>{record.studentName || "—"}</td>
+                        <td>{record.studentEmail || "—"}</td>
+                        <td>{eventName}</td>
+                        <td>{record.feedbackRating ? `${record.feedbackRating}/5` : "—"}</td>
+                        <td className="feedback-record-text">{record.feedbackText}</td>
+                        <td>
+                          {Number.isNaN(submittedDate.getTime())
+                            ? "—"
+                            : submittedDate.toLocaleString()}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

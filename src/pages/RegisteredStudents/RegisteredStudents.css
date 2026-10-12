@@ -178,6 +178,30 @@
   overflow-x: auto;
 }
 
+.feedback-records-card {
+  margin-top: 24px;
+}
+
+.feedback-records-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.feedback-records-heading h2 {
+  margin: 0 0 6px;
+  color: #fff;
+  font-size: 21px;
+}
+
+.feedback-records-heading p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
 .registered-table-wrap {
   width: 100%;
   overflow-x: auto;
@@ -207,6 +231,17 @@
 
 .registered-table tbody tr:hover {
   background: rgba(255, 255, 255, 0.035);
+}
+
+.feedback-records-table {
+  min-width: 900px;
+}
+
+.feedback-record-text {
+  min-width: 240px;
+  max-width: 480px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .issue-certificate-btn {
@@ -296,5 +331,10 @@
 
   .registered-card {
     padding: 14px;
+  }
+
+  .feedback-records-heading {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
