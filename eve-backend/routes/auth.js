@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const Admin = require("../models/Admin")
 const crypto = require("crypto")
 const { sendMail, sendStudentWelcomeEmail } = require("../utils/mailer");
+const { authenticate, studentOnly } = require("../middleware/authMiddleware");
 
 // Student registration route
 
@@ -126,6 +127,24 @@ router.post("/login/student", async (req, res) => {
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.get("/student/profile", authenticate, studentOnly, async (req, res) => {
+  try {
+    const student = await User.findOne({
+      _id: req.user.id,
+      role: "student",
+    }).select("name regNo email role");
+
+    if (!student) {
+      return res.status(404).json({ message: "Student profile not found" });
+    }
+
+    return res.status(200).json({ student });
+  } catch (error) {
+    console.error("Student profile lookup error:", error);
+    return res.status(500).json({ message: "Failed to load student profile" });
   }
 });
 

@@ -152,8 +152,8 @@ function sendCertificateEmail(registration) {
 
   return sendMail({
     to: registration.studentEmail,
-    subject: `Your certificate for ${eventDetails.eventName}`,
-    text: `Hello ${studentName},\n\nCongratulations! You have received a certificate recognizing your participation in ${eventDetails.eventName}.\n\nCERTIFICATE DETAILS\n${certificateDetails.join("\n")}${certificateUrl ? `\n\nView and download your certificate:\n${certificateUrl}` : "\n\nSign in to your Eventexa account to view and download your certificate."}\n\nCongratulations again,\nEventexa`,
+    subject: `Your Eventexa certificate is ready: ${eventDetails.eventName}`,
+    text: `Hello ${studentName},\n\nYour participation certificate for ${eventDetails.eventName} has been generated. Sign in to Eventexa to collect and download it.${certificateUrl ? `\n\nOpen your certificate:\n${certificateUrl}` : "\n\nOpen Event E-Certificates in your Eventexa account to view and download it."}\n\nCERTIFICATE DETAILS\n${certificateDetails.join("\n")}\n\nCongratulations,\nEventexa`,
     name: studentName,
     eventName: eventDetails.eventName,
     eventDate: eventDetails.eventDate,

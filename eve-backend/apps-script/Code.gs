@@ -47,11 +47,11 @@ function doPost(event) {
         "Date issued: " + input.certificateIssuedDate,
       ].filter(Boolean);
 
-      email.subject = "Your certificate for " + input.eventName;
+      email.subject = "Your Eventexa certificate is ready: " + input.eventName;
       email.body = [
         "Hello " + studentName + ",",
         "",
-        "Congratulations! You have received a certificate recognizing your participation in " + input.eventName + ".",
+        "Your participation certificate for " + input.eventName + " has been generated. Sign in to Eventexa to collect and download it.",
         "",
         "CERTIFICATE DETAILS",
         certificateLines.join("\n"),
