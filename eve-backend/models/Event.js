@@ -16,7 +16,7 @@ const eventSchema = new mongoose.Schema({
   organizer: { type: String },
   registrationLink: { type: String },
   feedbackFormLink: { type: String },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" }
 }, { timestamps: true });
 
 eventSchema.pre("save", function() {

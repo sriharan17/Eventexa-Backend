@@ -8,6 +8,23 @@ const {
 } = require("../middleware/authMiddleware");
 
 const router = express.Router();
+const editableEventFields = [
+  "title",
+  "name",
+  "category",
+  "date",
+  "time",
+  "startTime",
+  "endTime",
+  "venue",
+  "location",
+  "seats",
+  "maxParticipants",
+  "description",
+  "organizer",
+  "registrationLink",
+  "feedbackFormLink"
+];
 
 const getTodayDateString = () => {
   const today = new Date();
@@ -35,6 +52,22 @@ router.get("/", async (req, res) => {
 
     res.status(500).json({
       message: "Failed to fetch events",
+      error: error.message
+    });
+  }
+});
+
+router.get("/admin", authenticate, adminOnly, async (req, res) => {
+  try {
+    const events = await Event.find({ createdBy: req.user.id })
+      .sort({ date: 1 });
+
+    res.status(200).json(events);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Failed to fetch your events",
       error: error.message
     });
   }
@@ -123,7 +156,8 @@ router.post(
         endTime,
         registrationLink,
         feedbackFormLink,
-        maxParticipants
+        maxParticipants,
+        createdBy: req.user.id
       });
 
       const savedEvent = await event.save();
@@ -160,10 +194,14 @@ router.put(
 
     try {
 
+      const updates = Object.fromEntries(
+        Object.entries(req.body).filter(([field]) => editableEventFields.includes(field))
+      );
+
       const event =
-        await Event.findByIdAndUpdate(
-          req.params.id,
-          req.body,
+        await Event.findOneAndUpdate(
+          { _id: req.params.id, createdBy: req.user.id },
+          updates,
           {
             new: true,
             runValidators: true
@@ -205,10 +243,10 @@ router.delete(
 
     try {
 
-      const event =
-        await Event.findByIdAndDelete(
-          req.params.id
-        );
+      const event = await Event.findOneAndDelete({
+        _id: req.params.id,
+        createdBy: req.user.id
+      });
 
       if (!event) {
         return res.status(404).json({
