@@ -4,10 +4,6 @@ import "./StudentDashboard.css";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 
-const markPendingRegistrationSync = () => {
-  localStorage.setItem("eventRegistrationSyncNeeded", Date.now().toString());
-};
-
 const reloadIfRegistrationSyncPending = () => {
   const pendingSync = localStorage.getItem("eventRegistrationSyncNeeded");
   if (!pendingSync) return;
@@ -34,6 +30,7 @@ function StudentDashboard() {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [registeringEventId, setRegisteringEventId] = useState("");
 
   useEffect(() => {
     let isActive = true;
@@ -94,20 +91,27 @@ function StudentDashboard() {
     };
   }, [studentToken]);
 
-  const handleRegister = (event) => {
+  const handleRegister = async (event) => {
     if (!studentToken) {
       navigate("/student-login");
       return;
     }
 
     setError("");
-    if (!event.registrationLink) {
-      setError("The registration form is not available for this event.");
-      return;
+    const eventId = event._id || event.id;
+    setRegisteringEventId(eventId);
+    try {
+      const response = await api.post("/registrations/register", { eventId });
+      setRegistrations((current) => (
+        current.some((registration) =>
+          (registration.eventId?._id || registration.eventId) === eventId
+        ) ? current : [response.data.registration, ...current]
+      ));
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Registration failed.");
+    } finally {
+      setRegisteringEventId("");
     }
-
-    markPendingRegistrationSync();
-    window.location.assign(event.registrationLink);
   };
 
   const today = new Date();
@@ -265,9 +269,9 @@ function StudentDashboard() {
                           <button
                             className="register-btn"
                             onClick={() => handleRegister(event)}
-                            disabled={!event.registrationLink}
+                            disabled={registeringEventId === (event._id || event.id)}
                           >
-                            {event.registrationLink ? "Register" : "Form unavailable"}
+                            {registeringEventId === (event._id || event.id) ? "Registering..." : "Register"}
                           </button>
                         )}
                       </div>

@@ -12,7 +12,7 @@ function AdminDashboard() {
     let isActive = true;
 
     Promise.allSettled([
-      api.get("/events"),
+      api.get("/events/admin"),
       getAllRegistrations()
     ]).then(([eventsResult, registrationsResult]) => {
       if (!isActive) return;

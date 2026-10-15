@@ -14,7 +14,6 @@ function AddEvent() {
     startTime: "",
     endTime: "",
     venue: "",
-    registrationLink: "",
     feedbackFormLink: "",
     maxParticipants: "",
     organizer: "",
@@ -307,30 +306,6 @@ function AddEvent() {
               <h2>Registration</h2>
 
               <div className="row g-4">
-
-                {/* Google Form */}
-                <div className="col-12">
-
-                  <label>
-                    Google Form Registration Link
-                  </label>
-
-                  <input
-                    type="url"
-                    name="registrationLink"
-                    className="form-control"
-                    placeholder="https://forms.google.com/..."
-                    value={event.registrationLink}
-                    onChange={handleChange}
-                    required
-                  />
-
-                  <small>
-                    Students will use this link to register for the event.
-                  </small>
-
-                </div>
-
 
                 {/* Maximum Participants */}
                 <div className="col-12 col-md-6">

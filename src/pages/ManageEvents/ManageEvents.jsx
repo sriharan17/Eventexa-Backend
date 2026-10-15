@@ -12,7 +12,7 @@ function ManageEvents() {
   const [savingFeedbackId, setSavingFeedbackId] = useState("");
 
   useEffect(() => {
-    api.get("/events")
+    api.get("/events/admin")
       .then((response) => setEvents(response.data))
       .catch((requestError) => {
         setError(requestError.response?.data?.message || "Failed to load events");
@@ -78,7 +78,7 @@ function ManageEvents() {
             <h1>Manage Events</h1>
 
             <p>
-              View and manage all campus events.
+              View and manage your events.
             </p>
           </div>
 

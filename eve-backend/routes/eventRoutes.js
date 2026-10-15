@@ -22,6 +22,7 @@ const editableEventFields = [
   "maxParticipants",
   "description",
   "organizer",
+  "googleFormUrl",
   "registrationLink",
   "feedbackFormLink"
 ];
@@ -126,6 +127,7 @@ router.post(
         organizer,
         startTime,
         endTime,
+        googleFormUrl,
         registrationLink,
         feedbackFormLink,
         maxParticipants
@@ -137,10 +139,11 @@ router.post(
         !description ||
         !date ||
         !venue ||
-        !organizer
+        !organizer ||
+        !(googleFormUrl || registrationLink)
       ) {
         return res.status(400).json({
-          message: "Title, description, date, venue, and organizer are required"
+          message: "Title, description, date, venue, organizer, and Google Form URL are required"
         });
       }
 
@@ -153,7 +156,8 @@ router.post(
         organizer,
         startTime,
         endTime,
-        registrationLink,
+        googleFormUrl: googleFormUrl || registrationLink,
+        registrationLink: registrationLink || googleFormUrl,
         feedbackFormLink,
         maxParticipants,
         createdBy: req.user.id

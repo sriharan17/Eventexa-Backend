@@ -3,18 +3,6 @@ import { useNavigate } from "react-router-dom";
 import "./AllEvents.css";
 import api from "../../services/api";
 
-const markPendingRegistrationSync = () => {
-  localStorage.setItem("eventRegistrationSyncNeeded", Date.now().toString());
-};
-
-const reloadIfRegistrationSyncPending = () => {
-  const pendingSync = localStorage.getItem("eventRegistrationSyncNeeded");
-  if (!pendingSync) return;
-
-  localStorage.removeItem("eventRegistrationSyncNeeded");
-  window.location.reload();
-};
-
 const isUpcomingEvent = (event) => {
   if (!event?.date) return false;
 
@@ -29,11 +17,10 @@ function AllEvents() {
   const [registrations, setRegistrations] = useState([]);
   const [error, setError] = useState("");
   const [syncNotice, setSyncNotice] = useState("");
+  const [registeringEventId, setRegisteringEventId] = useState("");
 
   useEffect(() => {
     let isActive = true;
-
-    reloadIfRegistrationSyncPending();
 
     const fetchEventsAndRegistrations = async (showNotice = false) => {
       try {
@@ -57,11 +44,10 @@ function AllEvents() {
       }
     };
 
-    fetchEventsAndRegistrations(Boolean(localStorage.getItem("eventRegistrationSyncNeeded")));
+    fetchEventsAndRegistrations();
 
     const refreshOnReturn = () => {
       if (document.visibilityState === "visible") {
-        reloadIfRegistrationSyncPending();
         fetchEventsAndRegistrations(true);
       }
     };
@@ -83,20 +69,28 @@ function AllEvents() {
     return () => clearTimeout(timer);
   }, [syncNotice]);
 
-  const handleRegister = (event) => {
+  const handleRegister = async (event) => {
     if (!localStorage.getItem("studentToken")) {
       navigate("/student-login");
       return;
     }
 
     setError("");
-    if (!event.registrationLink) {
-      setError("The registration form is not available for this event.");
-      return;
+    const eventId = event._id || event.id;
+    setRegisteringEventId(eventId);
+    try {
+      const response = await api.post("/registrations/register", { eventId });
+      setRegistrations((current) => (
+        current.some((registration) =>
+          (registration.eventId?._id || registration.eventId) === eventId
+        ) ? current : [response.data.registration, ...current]
+      ));
+      setSyncNotice(response.data.message);
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Registration failed.");
+    } finally {
+      setRegisteringEventId("");
     }
-
-    markPendingRegistrationSync();
-    window.location.assign(event.registrationLink);
   };
 
 
@@ -238,9 +232,9 @@ function AllEvents() {
                   type="button"
                   className="event-register-btn"
                   onClick={() => handleRegister(event)}
-                  disabled={!event.registrationLink}
+                  disabled={registeringEventId === (event._id || event.id)}
                 >
-                  {event.registrationLink ? "Register Now" : "Form unavailable"}
+                  {registeringEventId === (event._id || event.id) ? "Registering..." : "Register Now"}
                 </button>
               )}
 

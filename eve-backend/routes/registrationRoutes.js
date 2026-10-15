@@ -39,7 +39,10 @@ router.post("/register", authenticate, studentOnly, async (req, res) => {
       studentId: student._id,
     });
     if (existingRegistration) {
-      return res.status(409).json({ message: "Already registered for this event" });
+      return res.status(200).json({
+        message: "Already registered for this event",
+        registration: existingRegistration,
+      });
     }
 
     const registration = new Registration({
@@ -49,7 +52,7 @@ router.post("/register", authenticate, studentOnly, async (req, res) => {
       studentName: student.name,
       studentEmail: student.email,
       regNo: student.regNo,
-      source: "click",
+      source: "google-form",
       registrationEmailSent: false,
     });
     await registration.save();
