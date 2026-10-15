@@ -137,11 +137,10 @@ router.post(
         !description ||
         !date ||
         !venue ||
-        !organizer ||
-        !registrationLink
+        !organizer
       ) {
         return res.status(400).json({
-          message: "All event fields, including the Google Form registration link, are required"
+          message: "Title, description, date, venue, and organizer are required"
         });
       }
 

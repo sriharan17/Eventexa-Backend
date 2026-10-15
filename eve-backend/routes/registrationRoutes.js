@@ -1,5 +1,6 @@
 const express = require("express");
 const Registration = require("../models/Registration");
+const Event = require("../models/Event");
 const User = require("../models/User");
 const Admin = require("../models/Admin");
 const crypto = require("crypto");
@@ -14,10 +15,66 @@ const {
 
 const router = express.Router();
 
-router.post("/:eventId/register", authenticate, studentOnly, (req, res) => {
-  return res.status(410).json({
-    message: "Register through the event's Google Form. Your registration is recorded after you submit it.",
-  });
+router.post("/register", authenticate, studentOnly, async (req, res) => {
+  try {
+    const { eventId } = req.body;
+    if (typeof eventId !== "string" || !/^[a-f\d]{24}$/i.test(eventId)) {
+      return res.status(400).json({ message: "A valid event ID is required" });
+    }
+
+    const [event, student] = await Promise.all([
+      Event.findById(eventId),
+      User.findOne({ _id: req.user.id, role: "student" }),
+    ]);
+
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+    if (!student) {
+      return res.status(404).json({ message: "Student account not found" });
+    }
+
+    const existingRegistration = await Registration.findOne({
+      eventId: event._id,
+      studentId: student._id,
+    });
+    if (existingRegistration) {
+      return res.status(409).json({ message: "Already registered for this event" });
+    }
+
+    const registration = new Registration({
+      eventId: event._id,
+      eventName: event.title || event.name,
+      studentId: student._id,
+      studentName: student.name,
+      studentEmail: student.email,
+      regNo: student.regNo,
+      source: "click",
+      registrationEmailSent: false,
+    });
+    await registration.save();
+
+    let emailSent = false;
+    try {
+      await sendEventRegistrationEmail(student, event);
+      registration.registrationEmailSent = true;
+      await registration.save();
+      emailSent = true;
+    } catch (emailError) {
+      console.error(`Event registration email failed for ${registration._id}:`, emailError);
+    }
+
+    return res.status(201).json({
+      message: emailSent
+        ? "Registration successful"
+        : "Registration successful, but the confirmation email could not be sent",
+      registration,
+      emailSent,
+    });
+  } catch (error) {
+    console.error("Event registration error:", error);
+    return res.status(500).json({ message: "Registration failed" });
+  }
 });
 
 router.get("/my", authenticate, studentOnly, async (req, res) => {
