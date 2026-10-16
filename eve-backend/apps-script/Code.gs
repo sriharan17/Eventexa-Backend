@@ -1,6 +1,30 @@
 function doPost(event) {
   try {
     var input = JSON.parse(event.postData.contents);
+
+    if (input.action === "registerForm") {
+      var setupSecret = PropertiesService.getScriptProperties()
+        .getProperty("EVENTEXA_SCRIPT_SETUP_SECRET");
+
+      if (!setupSecret || input.setupSecret !== setupSecret) {
+        return jsonResponse({ success: false, message: "Unauthorized form registration." });
+      }
+
+      if (
+        typeof input.formId !== "string" ||
+        !input.formId.trim() ||
+        typeof input.eventId !== "string" ||
+        !input.eventId.trim()
+      ) {
+        return jsonResponse({ success: false, message: "Form ID and event ID are required." });
+      }
+
+      PropertiesService.getScriptProperties()
+        .setProperty("FORM_" + input.formId.trim(), input.eventId.trim());
+
+      return jsonResponse({ success: true });
+    }
+
     var expectedSecret = PropertiesService.getScriptProperties()
       .getProperty("EVENTEXA_MAIL_SECRET");
 
