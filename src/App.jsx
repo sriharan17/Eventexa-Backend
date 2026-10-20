@@ -20,6 +20,7 @@ import MyRegistrations from "./pages/MyRegistrations/MyRegistrations";
 import RegisteredStudents from "./pages/RegisteredStudents/RegisteredStudents";
 import EventCertificates from "./pages/EventCertificates/EventCertificates";
 import StudentFeedback from "./pages/StudentFeedback/StudentFeedback";
+import RegistrationSuccess from "./pages/RegistrationSuccess/RegistrationSuccess";
 
 function App() {
   return (
@@ -78,6 +79,10 @@ function App() {
         <Route
           path="/all-events"
           element={<AllEvents />}
+        />
+        <Route
+          path="/registration-success"
+          element={<RegistrationSuccess />}
         />
 
         <Route

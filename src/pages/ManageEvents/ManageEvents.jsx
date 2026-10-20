@@ -196,9 +196,9 @@ function ManageEvents() {
 
                 {/* Registration Link */}
 
-                {event.registrationLink && (
+                {(event.googleFormUrl || event.registrationLink) && (
                   <a
-                    href={event.registrationLink}
+                    href={event.googleFormUrl || event.registrationLink}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="registration-link"

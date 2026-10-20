@@ -23,6 +23,7 @@ const editableEventFields = [
   "maxParticipants",
   "description",
   "organizer",
+  "formUrl",
   "googleFormUrl",
   "registrationLink",
   "feedbackFormLink"
@@ -35,54 +36,82 @@ const getTodayDateString = () => {
   return `${today.getFullYear()}-${month}-${day}`;
 };
 
-const registerGoogleForm = async (formUrl, eventId) => {
-  try {
-    if (!formUrl) {
-      return;
-    }
+const getFormIntegrationConfig = () => {
+  const scriptUrl = process.env.APPS_SCRIPT_URL || process.env.EVENTEXA_SCRIPT_URL;
+  const secret = process.env.APPS_SCRIPT_SECRET || process.env.EVENTEXA_SCRIPT_SETUP_SECRET;
+  const webhookSecret = process.env.GOOGLE_FORM_WEBHOOK_SECRET;
+  const backendUrl = process.env.PUBLIC_API_URL || process.env.RENDER_EXTERNAL_URL;
 
-    const match = formUrl.match(/\/d\/(?:e\/)?([^/]+)/);
-
-    if (!match) {
-      console.log("Could not extract Google Form ID from:", formUrl);
-      return;
-    }
-
-    const formId = match[1];
-    const scriptUrl = process.env.EVENTEXA_SCRIPT_URL;
-    const setupSecret = process.env.EVENTEXA_SCRIPT_SETUP_SECRET;
-
-    if (!scriptUrl || !setupSecret) {
-      console.log("Apps Script environment variables are missing.");
-      return;
-    }
-
-    const response = await axios.post(
-      scriptUrl,
-      {
-        action: "registerForm",
-        formId,
-        eventId: eventId.toString(),
-        setupSecret
-      },
-      {
-        headers: {
-          "Content-Type": "application/json"
-        }
-      }
+  if (!scriptUrl || !secret || !webhookSecret || !backendUrl) {
+    const error = new Error(
+      "Google Form integration is not configured. Set APPS_SCRIPT_URL, APPS_SCRIPT_SECRET, GOOGLE_FORM_WEBHOOK_SECRET, and PUBLIC_API_URL."
     );
-
-    if (response.data?.success !== true) {
-      throw new Error(response.data?.message || "Apps Script rejected the form registration.");
-    }
-
-    console.log("Google Form connected:", response.data);
-  } catch (error) {
-    console.error(
-      "Failed to connect Google Form:",
-      error.response?.data || error.message
-    );
+    error.statusCode = 503;
+    throw error;
   }
+
+  const normalizedBackendUrl = backendUrl.replace(/\/+$/, "").replace(/\/api$/, "");
+  return {
+    scriptUrl,
+    secret,
+    webhookSecret,
+    webhookUrl: `${normalizedBackendUrl}/api/registrations/form-webhook`
+  };
+};
+
+const callAppsScript = async (payload) => {
+  const { scriptUrl } = getFormIntegrationConfig();
+  const response = await axios.post(scriptUrl, payload, {
+    headers: { "Content-Type": "application/json" },
+    timeout: 20000
+  });
+
+  if (response.data?.success !== true) {
+    throw new Error(response.data?.message || "Apps Script rejected the request.");
+  }
+  return response.data;
+};
+
+const createGoogleForm = async (event) => {
+  const config = getFormIntegrationConfig();
+  const response = await axios.post(
+    config.scriptUrl,
+    {
+      action: "createForm",
+      secret: config.secret,
+      webhookUrl: config.webhookUrl,
+      webhookSecret: config.webhookSecret,
+      eventId: event._id.toString(),
+      title: event.title,
+      description: event.description
+    },
+    {
+      headers: { "Content-Type": "application/json" },
+      timeout: 20000
+    }
+  );
+
+  if (response.data?.success !== true || typeof response.data.formUrl !== "string") {
+    throw new Error(response.data?.message || "Apps Script did not return a registration form URL.");
+  }
+  return response.data.formUrl;
+};
+
+const registerGoogleForm = async (formUrl, eventId) => {
+  const match = formUrl.match(/\/d\/(?:e\/)?([^/]+)/);
+  if (!match) {
+    throw new Error("The supplied registration link is not a valid Google Form URL.");
+  }
+
+  const config = getFormIntegrationConfig();
+  await callAppsScript({
+    action: "registerForm",
+    formId: match[1],
+    eventId: eventId.toString(),
+    setupSecret: config.secret,
+    webhookUrl: config.webhookUrl,
+    webhookSecret: config.webhookSecret
+  });
 };
 
 
@@ -100,7 +129,7 @@ router.get("/", async (req, res) => {
 
   } catch (error) {
 
-    console.error(error);
+    console.error("Failed to fetch events:", error.message);
 
     res.status(500).json({
       message: "Failed to fetch events",
@@ -178,6 +207,7 @@ router.post(
         organizer,
         startTime,
         endTime,
+        formUrl,
         googleFormUrl,
         registrationLink,
         feedbackFormLink,
@@ -190,11 +220,10 @@ router.post(
         !description ||
         !date ||
         !venue ||
-        !organizer ||
-        !(googleFormUrl || registrationLink)
+        !organizer
       ) {
         return res.status(400).json({
-          message: "Title, description, date, venue, organizer, and Google Form URL are required"
+          message: "Title, description, date, venue, and organizer are required"
         });
       }
 
@@ -207,19 +236,23 @@ router.post(
         organizer,
         startTime,
         endTime,
-        googleFormUrl: googleFormUrl || registrationLink,
-        registrationLink: registrationLink || googleFormUrl,
+        formUrl: formUrl || googleFormUrl || registrationLink,
+        googleFormUrl: googleFormUrl || registrationLink || formUrl,
+        registrationLink: registrationLink || googleFormUrl || formUrl,
         feedbackFormLink,
         maxParticipants,
         createdBy: req.user.id
       });
 
-      const savedEvent = await event.save();
+      if (event.formUrl) {
+        await registerGoogleForm(event.formUrl, event._id);
+      } else {
+        event.formUrl = await createGoogleForm(event);
+        event.googleFormUrl = event.formUrl;
+        event.registrationLink = event.formUrl;
+      }
 
-      await registerGoogleForm(
-        savedEvent.googleFormUrl,
-        savedEvent._id
-      );
+      const savedEvent = await event.save();
 
       res.status(201).json({
         success: "true",
@@ -229,9 +262,12 @@ router.post(
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        "Event creation failed:",
+        error.response?.data?.message || error.message
+      );
 
-      res.status(500).json({
+      res.status(error.statusCode || 500).json({
         message: "Failed to create event",
         error: error.message
       });

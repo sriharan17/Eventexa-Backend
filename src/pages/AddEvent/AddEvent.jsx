@@ -14,6 +14,7 @@ function AddEvent() {
     startTime: "",
     endTime: "",
     venue: "",
+    googleFormUrl: "",
     feedbackFormLink: "",
     maxParticipants: "",
     organizer: "",
@@ -306,6 +307,22 @@ function AddEvent() {
               <h2>Registration</h2>
 
               <div className="row g-4">
+
+                <div className="col-12">
+                  <label>Google Form URL</label>
+                  <input
+                    type="url"
+                    name="googleFormUrl"
+                    className="form-control"
+                    placeholder="https://docs.google.com/forms/..."
+                    value={event.googleFormUrl}
+                    onChange={handleChange}
+                    required
+                  />
+                  <small>
+                    Add this return link to the Form confirmation message: {window.location.origin}/registration-success
+                  </small>
+                </div>
 
                 {/* Maximum Participants */}
                 <div className="col-12 col-md-6">

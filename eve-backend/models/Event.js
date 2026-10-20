@@ -14,6 +14,7 @@ const eventSchema = new mongoose.Schema({
   maxParticipants: { type: Number },
   description: { type: String },
   organizer: { type: String },
+  formUrl: { type: String },
   googleFormUrl: { type: String },
   registrationLink: { type: String },
   feedbackFormLink: { type: String },

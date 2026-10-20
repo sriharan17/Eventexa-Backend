@@ -8,7 +8,7 @@ const { sendEventRegistrationEmail } = require("../utils/mailer");
 
 const router = express.Router();
 
-router.post("/google-form-submit", async (req, res) => {
+const handleGoogleFormSubmit = async (req, res) => {
   try {
     const secret = process.env.GOOGLE_FORM_WEBHOOK_SECRET;
     const authorization = req.get("authorization") || "";
@@ -115,7 +115,10 @@ router.post("/google-form-submit", async (req, res) => {
     console.error("Google Form registration callback error:", error);
     res.status(500).json({ message: "Failed to record form registration" });
   }
-});
+};
+
+router.post("/form-webhook", handleGoogleFormSubmit);
+router.post("/google-form-submit", handleGoogleFormSubmit);
 
 // GET ALL REGISTERED STUDENTS
 router.get("/all", authenticate, adminOnly, async (req, res) => {

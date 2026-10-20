@@ -1,13 +1,38 @@
 function doPost(event) {
   try {
     var input = JSON.parse(event.postData.contents);
+    var properties = PropertiesService.getScriptProperties();
 
-    if (input.action === "registerForm") {
-      var setupSecret = PropertiesService.getScriptProperties()
-        .getProperty("EVENTEXA_SCRIPT_SETUP_SECRET");
+    if (input.action === "createForm" || input.action === "registerForm") {
+      var setupSecret = properties.getProperty("EVENTEXA_SCRIPT_SETUP_SECRET")
+        || properties.getProperty("APPS_SCRIPT_SECRET");
 
-      if (!setupSecret || input.setupSecret !== setupSecret) {
+      var suppliedSecret = input.action === "createForm" ? input.secret : input.setupSecret;
+      if (!setupSecret || suppliedSecret !== setupSecret) {
         return jsonResponse({ success: false, message: "Unauthorized form registration." });
+      }
+
+      if (!validWebhookConfiguration(input)) {
+        return jsonResponse({ success: false, message: "A valid webhook URL and secret are required." });
+      }
+
+      if (input.action === "createForm") {
+        if (
+          typeof input.eventId !== "string" ||
+          !input.eventId.trim() ||
+          typeof input.title !== "string" ||
+          !input.title.trim() ||
+          typeof input.description !== "string"
+        ) {
+          return jsonResponse({ success: false, message: "Event ID, title, and description are required." });
+        }
+
+        var form = FormApp.create(input.title.trim());
+        form.setDescription(input.description);
+        form.setCollectEmail(true);
+        form.setConfirmationMessage("Your registration has been submitted. You can return to Eventexa now.");
+        configureForm(form.getId(), input.eventId.trim(), input.webhookUrl, input.webhookSecret);
+        return jsonResponse({ success: true, formUrl: form.getPublishedUrl() });
       }
 
       if (
@@ -19,14 +44,11 @@ function doPost(event) {
         return jsonResponse({ success: false, message: "Form ID and event ID are required." });
       }
 
-      PropertiesService.getScriptProperties()
-        .setProperty("FORM_" + input.formId.trim(), input.eventId.trim());
-
+      configureForm(input.formId.trim(), input.eventId.trim(), input.webhookUrl, input.webhookSecret);
       return jsonResponse({ success: true });
     }
 
-    var expectedSecret = PropertiesService.getScriptProperties()
-      .getProperty("EVENTEXA_MAIL_SECRET");
+    var expectedSecret = properties.getProperty("EVENTEXA_MAIL_SECRET");
 
     if (!expectedSecret || input.secret !== expectedSecret) {
       return jsonResponse({ success: false, message: "Unauthorized email request." });
@@ -103,6 +125,56 @@ function doPost(event) {
       success: false,
       message: error && error.message ? error.message : "Email delivery failed.",
     });
+  }
+}
+
+function validWebhookConfiguration(input) {
+  return typeof input.webhookUrl === "string" &&
+    /^https:\/\/.+\/api\/registrations\/form-webhook$/.test(input.webhookUrl) &&
+    typeof input.webhookSecret === "string" &&
+    input.webhookSecret.trim().length > 0;
+}
+
+function configureForm(formId, eventId, webhookUrl, webhookSecret) {
+  var properties = PropertiesService.getScriptProperties();
+  properties.setProperty("FORM_" + formId, eventId);
+  properties.setProperty("EVENTEXA_FORM_WEBHOOK_URL", webhookUrl);
+  properties.setProperty("EVENTEXA_FORM_WEBHOOK_SECRET", webhookSecret);
+
+  var hasTrigger = ScriptApp.getProjectTriggers().some(function(trigger) {
+    return trigger.getHandlerFunction() === "onFormSubmit" &&
+      trigger.getTriggerSourceId() === formId;
+  });
+  if (!hasTrigger) {
+    ScriptApp.newTrigger("onFormSubmit")
+      .forForm(FormApp.openById(formId))
+      .onFormSubmit()
+      .create();
+  }
+}
+
+function onFormSubmit(event) {
+  var formId = event.source.getId();
+  var properties = PropertiesService.getScriptProperties();
+  var eventId = properties.getProperty("FORM_" + formId);
+  var webhookUrl = properties.getProperty("EVENTEXA_FORM_WEBHOOK_URL");
+  var webhookSecret = properties.getProperty("EVENTEXA_FORM_WEBHOOK_SECRET");
+  var studentEmail = event.response.getRespondentEmail();
+
+  if (!eventId || !webhookUrl || !webhookSecret || !studentEmail) {
+    throw new Error("The form submission is missing its Eventexa callback configuration or respondent email.");
+  }
+
+  var response = UrlFetchApp.fetch(webhookUrl, {
+    method: "post",
+    contentType: "application/json",
+    headers: { Authorization: "Bearer " + webhookSecret },
+    payload: JSON.stringify({ eventId: eventId, studentEmail: studentEmail }),
+    muteHttpExceptions: true
+  });
+
+  if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
+    throw new Error("Eventexa registration callback failed: " + response.getContentText());
   }
 }
 

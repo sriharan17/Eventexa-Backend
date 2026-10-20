@@ -77,18 +77,18 @@ function AllEvents() {
 
     setError("");
     const eventId = event._id || event.id;
+    const formUrl = event.googleFormUrl || event.registrationLink;
+    if (!formUrl) {
+      setError("The registration form is not available for this event.");
+      return;
+    }
+
     setRegisteringEventId(eventId);
     try {
-      const response = await api.post("/registrations/register", { eventId });
-      setRegistrations((current) => (
-        current.some((registration) =>
-          (registration.eventId?._id || registration.eventId) === eventId
-        ) ? current : [response.data.registration, ...current]
-      ));
-      setSyncNotice(response.data.message);
-    } catch (requestError) {
-      setError(requestError.response?.data?.message || "Registration failed.");
-    } finally {
+      localStorage.setItem("eventexaPendingRegistration", JSON.stringify({ eventId }));
+      window.location.assign(formUrl);
+    } catch {
+      setError("Could not save this pending registration. Please try again.");
       setRegisteringEventId("");
     }
   };
@@ -232,9 +232,13 @@ function AllEvents() {
                   type="button"
                   className="event-register-btn"
                   onClick={() => handleRegister(event)}
-                  disabled={registeringEventId === (event._id || event.id)}
+                  disabled={!event.googleFormUrl && !event.registrationLink || registeringEventId === (event._id || event.id)}
                 >
-                  {registeringEventId === (event._id || event.id) ? "Registering..." : "Register Now"}
+                  {registeringEventId === (event._id || event.id)
+                    ? "Opening form..."
+                    : event.googleFormUrl || event.registrationLink
+                      ? "Register Now"
+                      : "Form unavailable"}
                 </button>
               )}
 
