@@ -78,7 +78,7 @@ const createGoogleForm = async (event) => {
     config.scriptUrl,
     {
       action: "createForm",
-      secret: config.secret,
+      setupSecret: config.secret,
       webhookUrl: config.webhookUrl,
       webhookSecret: config.webhookSecret,
       eventId: event._id.toString(),
@@ -239,7 +239,7 @@ router.post(
         formUrl: formUrl || googleFormUrl || registrationLink,
         googleFormUrl: googleFormUrl || registrationLink || formUrl,
         registrationLink: registrationLink || googleFormUrl || formUrl,
-        feedbackFormLink,
+        feedbackFormLink: feedbackFormLink || googleFormUrl || registrationLink || formUrl,
         maxParticipants,
         createdBy: req.user.id
       });
