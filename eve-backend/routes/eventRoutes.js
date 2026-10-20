@@ -1,5 +1,4 @@
 const express = require("express");
-const axios = require("axios");
 
 const Event = require("../models/Event");
 
@@ -35,85 +34,6 @@ const getTodayDateString = () => {
   const day = String(today.getDate()).padStart(2, "0");
   return `${today.getFullYear()}-${month}-${day}`;
 };
-
-const getFormIntegrationConfig = () => {
-  const scriptUrl = process.env.APPS_SCRIPT_URL || process.env.EVENTEXA_SCRIPT_URL;
-  const secret = process.env.APPS_SCRIPT_SECRET || process.env.EVENTEXA_SCRIPT_SETUP_SECRET;
-  const webhookSecret = process.env.GOOGLE_FORM_WEBHOOK_SECRET;
-  const backendUrl = process.env.PUBLIC_API_URL || process.env.RENDER_EXTERNAL_URL;
-
-  if (!scriptUrl || !secret || !webhookSecret || !backendUrl) {
-    const error = new Error(
-      "Google Form integration is not configured. Set APPS_SCRIPT_URL, APPS_SCRIPT_SECRET, GOOGLE_FORM_WEBHOOK_SECRET, and PUBLIC_API_URL."
-    );
-    error.statusCode = 503;
-    throw error;
-  }
-
-  const normalizedBackendUrl = backendUrl.replace(/\/+$/, "").replace(/\/api$/, "");
-  return {
-    scriptUrl,
-    secret,
-    webhookSecret,
-    webhookUrl: `${normalizedBackendUrl}/api/registrations/form-webhook`
-  };
-};
-
-const callAppsScript = async (payload) => {
-  const { scriptUrl } = getFormIntegrationConfig();
-  const response = await axios.post(scriptUrl, payload, {
-    headers: { "Content-Type": "application/json" },
-    timeout: 20000
-  });
-
-  if (response.data?.success !== true) {
-    throw new Error(response.data?.message || "Apps Script rejected the request.");
-  }
-  return response.data;
-};
-
-const createGoogleForm = async (event) => {
-  const config = getFormIntegrationConfig();
-  const response = await axios.post(
-    config.scriptUrl,
-    {
-      action: "createForm",
-      setupSecret: config.secret,
-      webhookUrl: config.webhookUrl,
-      webhookSecret: config.webhookSecret,
-      eventId: event._id.toString(),
-      title: event.title,
-      description: event.description
-    },
-    {
-      headers: { "Content-Type": "application/json" },
-      timeout: 20000
-    }
-  );
-
-  if (response.data?.success !== true || typeof response.data.formUrl !== "string") {
-    throw new Error(response.data?.message || "Apps Script did not return a registration form URL.");
-  }
-  return response.data.formUrl;
-};
-
-const registerGoogleForm = async (formUrl, eventId) => {
-  const match = formUrl.match(/\/d\/(?:e\/)?([^/]+)/);
-  if (!match) {
-    throw new Error("The supplied registration link is not a valid Google Form URL.");
-  }
-
-  const config = getFormIntegrationConfig();
-  await callAppsScript({
-    action: "registerForm",
-    formId: match[1],
-    eventId: eventId.toString(),
-    setupSecret: config.secret,
-    webhookUrl: config.webhookUrl,
-    webhookSecret: config.webhookSecret
-  });
-};
-
 
 // ======================================================
 // GET ALL EVENTS
@@ -220,10 +140,11 @@ router.post(
         !description ||
         !date ||
         !venue ||
-        !organizer
+        !organizer ||
+        !(formUrl || googleFormUrl || registrationLink)
       ) {
         return res.status(400).json({
-          message: "Title, description, date, venue, and organizer are required"
+          message: "Title, description, date, venue, organizer, and Google Form URL are required"
         });
       }
 
@@ -243,14 +164,6 @@ router.post(
         maxParticipants,
         createdBy: req.user.id
       });
-
-      if (event.formUrl) {
-        await registerGoogleForm(event.formUrl, event._id);
-      } else {
-        event.formUrl = await createGoogleForm(event);
-        event.googleFormUrl = event.formUrl;
-        event.registrationLink = event.formUrl;
-      }
 
       const savedEvent = await event.save();
 
