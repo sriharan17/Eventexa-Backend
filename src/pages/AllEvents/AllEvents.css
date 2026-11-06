@@ -1,0 +1,362 @@
+/* =========================================================
+   ALL EVENTS PAGE
+========================================================= */
+
+.all-events-page {
+  min-height: 100vh;
+
+  background: #0f172a;
+
+  color: white;
+
+  padding: 50px;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.all-events-header {
+  max-width: 1200px;
+
+  margin: 0 auto 40px;
+}
+
+.all-events-header h1 {
+  color: white;
+
+  font-size: 36px;
+
+  margin-bottom: 8px;
+}
+
+.all-events-header p {
+  color: #94a3b8;
+
+  font-size: 16px;
+
+  margin: 0;
+}
+
+
+/* =========================================================
+   EVENTS GRID
+========================================================= */
+
+/*
+  Bootstrap handles responsiveness.
+
+  Your JSX should use:
+
+  col-12
+  col-md-6
+  col-lg-4
+*/
+
+.events-grid {
+  max-width: 1200px;
+
+  margin: auto;
+}
+
+
+/* =========================================================
+   EVENT CARD
+========================================================= */
+
+.all-event-card {
+  height: 100%;
+
+  background: #161f33;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  border-radius: 18px;
+
+  padding: 25px;
+
+  transition: 0.3s ease;
+
+  box-sizing: border-box;
+}
+
+.all-event-card:hover {
+  transform: translateY(-6px);
+
+  border-color: #7c3aed;
+
+  box-shadow:
+    0 15px 35px rgba(124, 58, 237, 0.18);
+}
+
+
+/* =========================================================
+   CARD TOP
+========================================================= */
+
+.event-card-top {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: flex-start;
+
+  gap: 15px;
+
+  margin-bottom: 20px;
+}
+
+.event-category {
+  display: inline-block;
+
+  color: #c084fc;
+
+  background: rgba(124, 58, 237, 0.15);
+
+  border-radius: 20px;
+
+  padding: 6px 12px;
+
+  font-size: 12px;
+
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   DATE
+========================================================= */
+
+.event-date {
+  width: 50px;
+
+  height: 55px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  background: rgba(124, 58, 237, 0.15);
+
+  border-radius: 10px;
+
+  color: #c084fc;
+}
+
+.event-date strong {
+  font-size: 20px;
+
+  line-height: 1;
+}
+
+.event-date small {
+  font-size: 10px;
+
+  margin-top: 4px;
+}
+
+
+/* =========================================================
+   TITLE
+========================================================= */
+
+.all-event-card h2 {
+  color: white;
+
+  font-size: 20px;
+
+  line-height: 1.4;
+
+  margin-bottom: 12px;
+}
+
+
+/* =========================================================
+   DESCRIPTION
+========================================================= */
+
+.event-description {
+  color: #94a3b8;
+
+  font-size: 14px;
+
+  line-height: 1.7;
+
+  margin-bottom: 20px;
+}
+
+
+/* =========================================================
+   EVENT INFORMATION
+========================================================= */
+
+.event-info {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+
+  color: #cbd5e1;
+
+  font-size: 13px;
+
+  margin-bottom: 15px;
+}
+
+
+/* =========================================================
+   ORGANIZER
+========================================================= */
+
+.event-organizer {
+  color: #94a3b8;
+
+  font-size: 13px;
+
+  margin-top: 10px;
+
+  margin-bottom: 15px;
+}
+
+
+/* =========================================================
+   REGISTER BUTTON
+========================================================= */
+
+.event-register-btn {
+  display: block;
+
+  width: 100%;
+
+  padding: 12px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  background: linear-gradient(
+    135deg,
+    #7c3aed,
+    #ec4899
+  );
+
+  color: white;
+
+  text-align: center;
+
+  text-decoration: none;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.3s ease;
+
+  box-sizing: border-box;
+}
+
+.event-register-btn:hover {
+  color: white;
+
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 8px 20px rgba(124, 58, 237, 0.3);
+}
+
+.event-register-btn.is-registered,
+.event-register-btn.is-registered:hover {
+  background: #166534;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+.event-form-link {
+  display: block;
+  margin-top: 12px;
+  color: #c084fc;
+  text-align: center;
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   NO EVENTS
+========================================================= */
+
+.no-events {
+  max-width: 1200px;
+
+  margin: 30px auto 0;
+
+  background: #161f33;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  border-radius: 16px;
+
+  padding: 60px 20px;
+
+  text-align: center;
+
+  box-sizing: border-box;
+}
+
+.no-events-icon {
+  font-size: 50px;
+
+  margin-bottom: 15px;
+}
+
+.no-events h2 {
+  color: white;
+
+  font-size: 22px;
+
+  margin-bottom: 10px;
+}
+
+.no-events p {
+  color: #94a3b8;
+
+  font-size: 14px;
+
+  margin: 0;
+
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   SMALL DETAILS
+========================================================= */
+
+.all-event-card p {
+  overflow-wrap: break-word;
+}
+
+
+/* =========================================================
+   BOOTSTRAP RESPONSIVE SUPPORT
+========================================================= */
+
+/*
+  No media queries are needed here.
+
+  Bootstrap handles responsiveness through:
+
+  col-12      → mobile
+  col-md-6    → tablet
+  col-lg-4    → desktop
+*/

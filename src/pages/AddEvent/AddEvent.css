@@ -1,0 +1,210 @@
+/* ================= ADD EVENT PAGE ================= */
+
+.add-event-page {
+  min-height: 100vh;
+  background: #0f172a;
+  color: white;
+}
+
+
+/* ================= HEADER ================= */
+
+.add-event-header h1 {
+  color: white;
+  font-size: 34px;
+  margin-bottom: 8px;
+}
+
+.add-event-header p {
+  color: #94a3b8;
+  margin: 0;
+}
+
+
+/* ================= CARD ================= */
+
+.add-event-card {
+  max-width: 1000px;
+  margin: auto;
+
+  background: #161f33;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  border-radius: 18px;
+
+  padding: 35px;
+}
+
+
+/* ================= FORM SECTION ================= */
+
+.form-section {
+  padding-bottom: 30px;
+  margin-bottom: 30px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+}
+
+.form-section h2 {
+  color: white;
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+
+/* ================= LABEL ================= */
+
+.form-section label {
+  display: block;
+
+  color: white;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  margin-bottom: 8px;
+}
+
+
+/* ================= INPUTS ================= */
+
+.form-section .form-control,
+.form-section .form-select {
+  background: #1e293b;
+
+  color: white;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  border-radius: 10px;
+
+  padding: 12px 14px;
+
+  box-shadow: none;
+}
+
+.form-section .form-control::placeholder {
+  color: #64748b;
+}
+
+.form-section .form-control:focus,
+.form-section .form-select:focus {
+  background: #1e293b;
+
+  color: white;
+
+  border-color: #7c3aed;
+
+  box-shadow:
+    0 0 0 2px rgba(124, 58, 237, 0.15);
+}
+
+.form-section .form-select option {
+  background: #1e293b;
+  color: white;
+}
+
+
+/* ================= HELP TEXT ================= */
+
+.form-section small {
+  display: block;
+
+  color: #64748b;
+
+  font-size: 12px;
+
+  margin-top: 7px;
+}
+
+
+/* ================= BUTTONS ================= */
+
+.add-event-actions {
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 15px;
+
+  padding-top: 5px;
+}
+
+.cancel-event-btn,
+.save-event-btn {
+  padding: 12px 25px;
+
+  border-radius: 10px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.3s ease;
+}
+
+
+/* Cancel */
+
+.cancel-event-btn {
+  background: transparent;
+
+  color: #cbd5e1;
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.cancel-event-btn:hover {
+  background: #1e293b;
+}
+
+
+/* Save */
+
+.save-event-btn {
+  background: linear-gradient(
+    135deg,
+    #7c3aed,
+    #ec4899
+  );
+
+  color: white;
+
+  border: none;
+}
+
+.save-event-btn:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 10px 25px rgba(124, 58, 237, 0.3);
+}
+
+
+/* ================= MOBILE ================= */
+
+@media (max-width: 576px) {
+
+  .add-event-card {
+    padding: 22px 18px;
+  }
+
+  .add-event-header h1 {
+    font-size: 28px;
+  }
+
+  .add-event-actions {
+    flex-direction: column;
+  }
+
+  .cancel-event-btn,
+  .save-event-btn {
+    width: 100%;
+  }
+
+}

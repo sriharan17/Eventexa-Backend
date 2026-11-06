@@ -1,0 +1,160 @@
+.contact-admin-page {
+  min-height: 100vh;
+  background: #0f172a;
+
+  display: flex;
+  align-items: center;
+
+  padding: 60px 0;
+}
+
+.contact-admin-card {
+  background: #161f33;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+
+  padding: 40px;
+
+  text-align: center;
+
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+.contact-admin-icon {
+  width: 65px;
+  height: 65px;
+
+  margin: 0 auto 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 18px;
+
+  background: linear-gradient(
+    135deg,
+    #7c3aed,
+    #ec4899
+  );
+
+  font-size: 30px;
+}
+
+.contact-admin-card h1 {
+  color: white;
+  font-size: 30px;
+  margin-bottom: 10px;
+}
+
+.contact-admin-subtitle {
+  color: #b7bfd4;
+  font-size: 15px;
+  line-height: 1.6;
+
+  max-width: 420px;
+  margin: 0 auto 30px;
+}
+
+.admin-contact-details {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+
+  margin-bottom: 25px;
+}
+
+.admin-contact-item {
+  display: flex;
+  align-items: center;
+
+  gap: 15px;
+
+  background: #1e293b;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  border-radius: 14px;
+
+  padding: 18px;
+
+  text-align: left;
+
+  transition: 0.3s ease;
+}
+
+.admin-contact-item:hover {
+  border-color: #7c3aed;
+
+  transform: translateY(-2px);
+}
+
+.contact-item-icon {
+  width: 45px;
+  height: 45px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: rgba(124, 58, 237, 0.15);
+
+  font-size: 21px;
+}
+
+.admin-contact-item h3 {
+  color: white;
+
+  font-size: 16px;
+
+  margin: 0 0 5px;
+}
+
+.admin-contact-item p {
+  color: #b7bfd4;
+
+  font-size: 14px;
+
+  margin: 0;
+}
+
+.contact-admin-note {
+  color: #94a3b8;
+
+  font-size: 14px;
+
+  line-height: 1.6;
+
+  margin-bottom: 25px;
+}
+
+.admin-contact-login,
+.admin-contact-home {
+  display: inline-block;
+
+  text-decoration: none;
+
+  font-size: 14px;
+
+  transition: 0.3s;
+}
+
+.admin-contact-login {
+  color: #a855f7;
+}
+
+.admin-contact-home {
+  margin-top: 12px;
+
+  color: #94a3b8;
+}
+
+.admin-contact-login:hover,
+.admin-contact-home:hover {
+  color: #c084fc;
+}
